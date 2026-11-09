@@ -1,0 +1,19 @@
+# Playwright 本地验证快照（调试产物，不入库）
+.playwright-cli/
+verify-*.png
+*.log
+
+# 本地构建产物
+dist/
+site.tar.gz
+dist.sha256
+
+# Python 编译缓存
+__pycache__/
+*.pyc
+
+# 系统与编辑器
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

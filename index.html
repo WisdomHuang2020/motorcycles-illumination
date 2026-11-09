@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Motorcycles Illumination · 二轮车照明配光技术站</title>
+<meta name="description" content="基于内部培训资料构建的二轮车照明配光技术知识站：GB 19152-2025 与 GB/T 31887.1-2019 逐表速查、配光屏交互、设计全流程、测试照准、研发内控与自测。">
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+
+<!-- ============ 顶部导航 ============ -->
+<header class="topbar">
+  <div class="bar">
+    <div class="brand"><i class="mark"></i><b>MOTORCYCLES ILLUMINATION</b><span>二轮车照明配光技术站</span></div>
+    <button class="nav-toggle" id="navToggle" aria-label="展开导航">目录 ▾</button>
+    <nav class="navlinks" id="navLinks">
+      <a href="#home">首页</a>
+      <a href="#basis">01 基础</a>
+      <a href="#screen">02 配光屏</a>
+      <a href="#paths">03 合规路径</a>
+      <a href="#tables">04 逐表速查</a>
+      <a href="#workflow">05 设计流程</a>
+      <a href="#test">06 测试照准</a>
+      <a href="#control">07 内控</a>
+      <a href="#pitfalls">08 翻车案例</a>
+      <a href="#quiz">09 自测</a>
+      <a href="#caveats">10 资料口径</a>
+    </nav>
+  </div>
+</header>
+
+<!-- ============ HERO ============ -->
+<div class="hero" id="home">
+  <div class="hero-inner">
+    <div>
+      <div class="eyebrow">Photometric Engineering · Technical Knowledge Base</div>
+      <h1>把二轮车灯的<br><em>每一个测试点</em>讲明白</h1>
+      <p class="lede">GB 19152-2025 与 GB/T 31887.1-2019，一套是 25 m 屏上的 cd，一套是 10 m 屏上的 lx。本站把内部培训资料整理成可交互的配光知识站：逐表速查、测试点定位、设计流程、照准实操、研发内控与自测。</p>
+      <div class="chips">
+        <span class="hot">摩托车 · GB 19152-2025 · 25 m · cd</span>
+        <span>电动自行车 · GB/T 31887.1-2019 · 10 m · lx</span>
+        <span>进阶培训 V6.7 · 76 页</span>
+        <span>教程 Rev3.3 · 14 页</span>
+        <span>全流程教程 · MD35 项目</span>
+      </div>
+      <div class="hero-cta">
+        <a class="btn btn-primary" href="#screen">打开交互配光屏 →</a>
+        <a class="btn btn-ghost" href="#tables">查标准限值</a>
+      </div>
+      <div class="hero-meta">
+        资料来源：益明光电（无锡）· 实益达 SEA STAR 研发中心《电动摩托车光型配光进阶培训 V6.7》等，2026-08。<br>
+        本站为培训资料的整理与可视化，<b style="color:#F6B26B">不替代标准原文</b>；认证判定以标准原文及检测机构意见为准。资料内部存在矛盾之处，见第 10 节。
+      </div>
+    </div>
+    <div class="beam-panel">
+      <div class="panel-head">
+        <span class="lbl">BEAM PATTERN · 光型切换</span>
+        <div class="seg" id="beamTabs">
+          <button data-mode="sym">对称近光</button>
+          <button data-mode="asym">非对称近光</button>
+          <button data-mode="high">远光</button>
+          <button data-mode="ebike">电自近光</button>
+        </div>
+      </div>
+      <svg id="beamSvg" viewBox="0 0 800 400" role="img" aria-label="配光屏光型示意，可切换对称近光、非对称近光、远光、电动自行车近光"></svg>
+      <div class="beam-note" id="beamNote"></div>
+    </div>
+  </div>
+</div>
+
+<main class="wrap">
+
+  <div class="notice" style="margin-top:26px">
+    <span class="ni">阅读前须知</span>
+    <span>本站所有数值均标注资料来源编号（S1~S7）。<b>资料之间存在互相矛盾的记载</b>（如 75R 限值、GB/T 31887.1-2019 的版本状态、电自是否允许远光），已逐条列在 <a href="#caveats">第 10 节「资料口径与待核项」</a>，本站不做静默统一。凡涉及认证判定的数值，请回查标准原文。</span>
+  </div>
+
+  <!-- ============ 01 基础 ============ -->
+  <section class="sec" id="basis">
+    <div class="sec-head"><span class="sec-no">01</span><h2>先记住三条结论</h2><span class="sub">cd / lx / 距离平方反比</span></div>
+    <div class="kpi-row">
+      <div class="kpi orange"><div class="v">25 m <small>· cd</small></div><div class="k">摩托车走「机动车」路线，在灯前 25 m 测发光强度（坎德拉）。GB 19152-2025 6.1.7。</div></div>
+      <div class="kpi teal"><div class="v">10 m <small>· lx</small></div><div class="k">电动自行车随整车走「非机动车」路线，在灯前 10 m 测照度（勒克斯）。GB/T 31887.1-2019。</div></div>
+      <div class="kpi"><div class="v">E = I ÷ d²</div><div class="k">两者是同一束光的两种说法。距离固定即可互换；10 m 与 25 m 的照度差 6.25 倍。</div></div>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <h3>概念：光强 vs 照度 <span class="src-tag">S1 / S2</span></h3>
+        <p><b>光强（cd）</b>是「光源朝某一方向发出的光有多猛」，属于灯自身属性，与距离无关。<b>照度（lx）</b>是「光打到某个面上，那个面有多亮」，随距离平方衰减。</p>
+        <p>标准要规定的其实是：在 10 m 或 25 m 那面墙上，<b>哪里必须亮（下限）、哪里绝不能亮（上限）</b>。</p>
+        <div class="callout orange"><span class="ct">一句话记忆</span>摩托车说 cd、测 25 m；电自说 lx、测 10 m。数值不能直接比较，先统一单位与距离。</div>
+      </div>
+      <div class="card">
+        <h3>交互式换算器 <span class="src-tag">S1 / S2</span></h3>
+        <div class="calc" style="grid-template-columns:1fr">
+          <div>
+            <div class="field"><label for="calcI">光强 I（cd）</label><input id="calcI" type="number" value="10000" min="0" step="100"></div>
+            <div class="field"><label for="calcD">测试距离 d（m）</label><input id="calcD" type="number" value="25" min="0.1" step="0.5"></div>
+          </div>
+          <div class="result">
+            <div class="rl">该方向在该距离屏上的照度 E</div>
+            <div class="rv" id="luxOut">—</div>
+            <div class="rx" id="luxFormula"></div>
+            <div class="mini">
+              <div><b id="lux10">—</b><span>同一光强在 10 m 屏（I÷100）</span></div>
+              <div><b id="lux25">—</b><span>同一光强在 25 m 屏（I÷625）</span></div>
+              <div><b id="cd10">—</b><span>反推 10 m 体系光强（E×100）</span></div>
+              <div><b id="cd25">—</b><span>反推 25 m 体系光强（E×625）</span></div>
+            </div>
+          </div>
+        </div>
+        <p class="tbl-note">举例（S2 第 56 页）：I = 10 000 cd → 10 m 处 100 lx、25 m 处 16 lx，比值 6.25。教程 Rev3.3 换算举例：摩托车 50V ≥5 100 cd 折合 25 m 屏约 8.2 lx；电自 A 点 ≥10 lx 折合约 1 000 cd。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 02 配光屏 ============ -->
+  <section class="sec" id="screen">
+    <div class="sec-head"><span class="sec-no">02</span><h2>配光屏与测试点命名</h2><span class="sub">一面墙 · 一套坐标 · 一套命名规则</span></div>
+    <p class="lead">暗室中把灯放在测角仪支架上，正前方立一面测试屏；受光器沿屏幕逐点扫描。屏幕以 <b class="mono">HV</b> 为原点，建立 <b class="mono">H-H</b>（水平）与 <b class="mono">V-V</b>（垂直）坐标系。<span class="src-tag">S1 / S2</span></p>
+
+    <div class="tabs" id="screenTabs">
+      <button class="on" data-key="cv">非对称近光 C / V</button>
+      <button data-key="bs">对称近光 BS</button>
+      <button data-key="high">远光 A / B</button>
+      <button data-key="ebike">电自近光 10 m</button>
+    </div>
+    <div class="screen-grid">
+      <div class="screen-box"><svg id="screenSvg" viewBox="0 0 800 400" role="img" aria-label="配光测试屏点位交互图，点击圆点查看限值"></svg></div>
+      <div class="point-detail" id="pointDetail"></div>
+    </div>
+
+    <div class="callout orange"><span class="ct">点名里的数字是道路距离（米），不是角度 <span class="src-tag">S2 第 10 页</span></span>
+      由 0.75 m 安装高度反推：50 → 0.86°D（tan⁻¹ 0.75/50）、75 → 0.57°D、25 → 1.72°D。<b class="mono">B50L</b>＝左 3.43°、上 0.57°，正是对向 50 m 处驾驶员眼睛的位置。方位字母：U 上 / D 下 / R 右 / L 左（标准 6.1.8）。
+    </div>
+    <div class="callout warn"><span class="ct">照准是前提（GB 19152-2025 6.3.1）</span>
+      非对称近光：截止线转角必须压在 V-V 线上，水平部分位于 H-H 线以下 <b class="mono">0.57°</b>（25 m 屏上约低 25 cm）。照准不准，后面所有 cd / lx 数值都作废。
+    </div>
+
+    <div class="grid2 spacer">
+      <div class="figcard"><img src="assets/img/配光测试点位置图.png" alt="GB 19152-2025 配光测试点位置图（25 m 屏）">
+        <div class="cap"><b>原培训插图 · 配光测试点位置图（25 m 屏）</b>：图中标注 1 区 ≤700 cd、Ⅲ 区 ≤625 cd、2 区 ≥1100 cd 等。注意该图混用了不同级别的点位坐标，属教学示意；<b>点位角度与限值以标准表为准</b>。<span class="src-tag">S6</span></div></div>
+      <div class="figcard"><img src="assets/img/截止线结构图.png" alt="对称与非对称近光截止线结构对比">
+        <div class="cap"><b>原培训插图 · 近光明暗截止线结构对比</b>：左为对称近光（BS/CS/DS）水平平直截止线，右为非对称近光（C/V）右侧 15° 上扬的肘肩。<span class="src-tag">S6</span></div></div>
+    </div>
+  </section>
+
+  <!-- ============ 03 合规路径 ============ -->
+  <section class="sec" id="paths">
+    <div class="sec-head"><span class="sec-no">03</span><h2>两条合规路径</h2><span class="sub">机动车 CCC vs 随整车验收</span></div>
+    <div class="card">
+      <h3>核心差异 <span class="src-tag">S1 / S2 / S4</span></h3>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>维度</th><th>摩托车 / 电动摩托车</th><th>电动自行车</th></tr></thead>
+        <tbody>
+          <tr><td>主标准</td><td class="num">GB 19152-2025</td><td class="num">GB/T 31887.1-2019（版本状态见第 10 节）</td></tr>
+          <tr><td>认证路径</td><td>机动车 CCC：前照灯 GB 19152 + 光信号 GB 17510 + 安装 GB 18100</td><td>随整车 GB 17761 验收，灯具不单独 CCC</td></tr>
+          <tr><td>测试距离 / 单位</td><td class="num">25 m / cd</td><td class="num">10 m / lx</td></tr>
+          <tr><td>防眩目（上限）</td><td>B50L ≤350 cd · Ⅲ区 ≤625 cd · BR ≤1 750 cd</td><td>H-H 及以上 &lt; 2 lx</td></tr>
+          <tr><td>照路（下限）</td><td>75R ≥12 100 · 50R ≥10 100 · 50V ≥5 100 cd（C 级）</td><td>A 点 EA ≥10 lx；远光 HV ≥50 lx</td></tr>
+          <tr><td>远光核心</td><td>Imax 27 000 / 40 000 cd（整体 ≤215 000 cd），HV ≥0.8×Imax</td><td>HV ≥50 lx 单档</td></tr>
+          <tr><td>近光分级</td><td>对称 BS/CS/DS、非对称 C/V；远光 A/B 与次级 BS/CS/DS；ADB 仅 L3/L4/L5</td><td>不分级，按 A 点实测 EA 分档（EA ≤20 / &gt;20 lx）</td></tr>
+          <tr><td>换算</td><td class="num">lx = cd ÷ 625</td><td class="num">cd = lx × 100</td></tr>
+        </tbody>
+      </table></div>
+      <p class="tbl-note">电动自行车标准状态存在重要争议：标准体系 xlsx 记载 GB/T 31887.1-2019 已于 2026-05-01 废止、2025 版删除电自适用范围，但 GB 17761-2024 仍引用 2019 版；且该 xlsx「问题5」称电自禁止远光，而进阶培训 V6.7 第 9.3 节讲解电自远光表 4。两者已列入 <a href="#caveats">待核项 C3 / C4</a>。</p>
+    </div>
+
+    <div class="spacer"></div>
+    <div class="tbl-head-row"><h3>标准体系逐维度对照 <span class="src-tag">S4</span></h3><span class="src">摩托车有完整标准链，电自存在体系断裂</span></div>
+    <div id="standardsTable"></div>
+
+    <div class="callout warn"><span class="ct">市场层面的系统性问题（S4「问题4」，观察性结论，B 级可信度）</span>
+      配光标准引用已废止版本、安装标准错位、环境可靠性标准空白、反射器标准版本争议；车灯无独立 CCC、电商与改装市场大量无截止线裸 LED；产品层面存在光型不合格、色温乱标、功率虚标、防水虚标、安装随意。该表自评可信度 B 级（市场观察 / 电商调研），本站按定性结论引用，不作为判据。
+    </div>
+
+    <div class="grid2 spacer">
+      <div class="figcard"><img src="assets/img/近光级别对比图.png" alt="近光各级别关键测试点限值对比柱状图">
+        <div class="cap"><b>原培训插图 · 近光各级别关键测试点限值对比</b>：50V 下限、50L~50R 线下限、1 区/Ⅲ 区上限。BS 2200/1100/700，CS 2450/1100/700，DS 4900/2200/700，V 5100/1800/625，C 5100/2540/625（cd）。<span class="src-tag">S6</span></div></div>
+      <div class="figcard"><img src="assets/img/远光级别对比图.png" alt="远光各级别 Imax / HV 限值对比柱状图">
+        <div class="cap"><b>原培训插图 · 远光各级别 Imax / HV 限值对比</b>：A 级 27 000 / 8 000，B 级 40 000 / 8 000，BS 级 20 000 / 16 000（cd）。<span class="src-tag">S6</span>　注：该图 A/B 的 HV 取 8 000 cd，与进阶培训表 8「HV ≥0.8×Imax」不一致，见待核项 C5。</div></div>
+    </div>
+  </section>
+
+  <!-- ============ 04 逐表速查 ============ -->
+  <section class="sec" id="tables">
+    <div class="sec-head"><span class="sec-no">04</span><h2>标准表格逐表速查</h2><span class="sub">表 3 / 4 / 5 / 8 / 9 / 10~14 · 电自表 3 / 4</span></div>
+    <p class="lead">数值为培训资料对 GB 19152-2025 与 GB/T 31887.1-2019 的节选整理，完整要求以标准原文为准。<span class="src-tag">S1 / S2 / S3</span></p>
+
+    <h3 style="color:var(--navy);font-size:17px;margin:0 0 10px">近光配光表</h3>
+    <div class="tabs" id="tableTabs">
+      <button class="on" data-table="bs">表 3 · BS 级</button>
+      <button data-table="csds">表 4 · CS / DS 级</button>
+      <button data-table="cv">表 5 · C / V 级</button>
+    </div>
+    <div id="tblSlot"></div>
+
+    <div class="spacer"></div>
+    <h3 style="color:var(--navy);font-size:17px;margin:0 0 10px">远光 · 表 8</h3>
+    <div id="tblHigh"></div>
+    <div class="callout teal"><span class="ct">0.8×Imax 为什么存在 <span class="src-tag">S2 第 29 页</span></span>Imax 可能落在偏心位置（例如某颗透镜焦点偏了）。HV 必须独立设下限，防止「边缘很亮、正前方反而黑」的空心光斑；中心与峰值差不得超过 20%。</div>
+
+    <div class="spacer"></div>
+    <h3 style="color:var(--navy);font-size:17px;margin:0 0 10px">ADB 自适应远光 · 表 9（仅 L3/L4/L5）</h3>
+    <div class="grid2">
+      <div id="tblAdbA"></div>
+      <div>
+        <div id="tblAdbB"></div>
+        <div class="callout orange" style="margin-top:14px"><span class="ct">三条附加规则 <span class="src-tag">S2 第 35 页</span></span>中性状态（未检测到来车）须满足 5.7.4 远光要求；成对安装单侧 HV ≥16 200 cd；其余点取两侧平均值判定；近光参与且达标时 B 部分可免测。</div>
+      </div>
+    </div>
+
+    <div class="spacer"></div>
+    <h3 style="color:var(--navy);font-size:17px;margin:0 0 10px">电动自行车 · GB/T 31887.1（10 m 屏，lx）</h3>
+    <div class="grid2"><div id="tblEbikeLow"></div><div id="tblEbikeHigh"></div></div>
+    <div class="callout"><span class="ct">电自信号灯要点 <span class="src-tag">S2 第 55 页</span></span>转向灯 1~2 Hz、占空比 45%~55%、光强 50~350 cd（不是 1.5~2.5 Hz）；制动灯 ≥40 cd 或 ≥5×后灯最大值（取高者）、≤185 cd；前/后位置灯持续发光或 1~4 Hz 闪光。</div>
+
+    <div class="spacer"></div>
+    <h3 style="color:var(--navy);font-size:17px;margin:0 0 10px">光通量与生产一致性</h3>
+    <div class="grid2"><div id="tblFlux"></div><div id="tblConformance"></div></div>
+
+    <div class="spacer"></div>
+    <div class="card">
+      <h3>限值速查（跨表检索） <span class="src-tag">全站表格</span></h3>
+      <div class="field"><label for="quickSearch">输入测试点、数值或关键词</label><input id="quickSearch" type="search" placeholder="例如：75R / B50L / 0.8 / ADB / 光通量 / 电自"></div>
+      <div id="quickResults"></div>
+    </div>
+  </section>
+
+  <!-- ============ 05 设计流程 ============ -->
+  <section class="sec" id="workflow">
+    <div class="sec-head"><span class="sec-no">05</span><h2>摩托车前照灯设计全流程</h2><span class="sub">三阶段十五步 · 从立项到市场监督</span></div>
+    <p class="lead">节点标题与副标题逐字取自「设计全流程图」；点击任一节点查看工程说明与依据。<span class="src-tag">S6 / S3</span></p>
+    <div class="card"><div id="flowBox"></div></div>
+
+    <div class="spacer"></div>
+    <div class="figcard"><img src="assets/img/设计全流程图.png" alt="摩托车前照灯设计全流程：三阶段十五步">
+      <div class="cap"><b>原培训插图 · 设计全流程图</b>：设计阶段（需求分析 → LED 选型 → 光学设计 → 仿真验证 → 原型制作）、验证阶段（暗室测试 → 分布光度计 → 报告判定 → 稳定性验证 → 型式试验）、量产阶段（生产一致性 → 来料检验 → 在线配光 → 出厂检验 → 市场监督）。<span class="src-tag">S6</span></div></div>
+
+    <div class="spacer"></div>
+    <div class="tbl-head-row"><h3>MD35 项目实测数据 <span class="src-tag">S3 / S6</span></h3><span class="src">教程以 MD35 项目经验为基础</span></div>
+    <div class="grid2" id="md35Charts"></div>
+    <div class="spacer"></div>
+    <div id="md35Facts"></div>
+    <div class="callout teal"><span class="ct">区域光通量的旋转不变性 <span class="src-tag">S3 第 7.2 节</span></span>区域Ⅰ＝30L~30R / 1U~15D，区域Ⅱ＝30L~30R / 1U~3.5D（含于Ⅰ内）。绕光轴旋转不改变区域光通量，因此其判定与照准无关；IES 的 candela multiplier 偏差只影响绝对值，不影响角度分布占比。</div>
+  </section>
+
+  <!-- ============ 06 测试照准 ============ -->
+  <section class="sec" id="test">
+    <div class="sec-head"><span class="sec-no">06</span><h2>测试设置与照准实操</h2><span class="sub">25 m / cd / 照准 vs 10 m / lx / 直测</span></div>
+    <p class="lead">同一间暗室，两套摆法，一步摆错全部白测。<span class="src-tag">S2 第 11 章</span></p>
+    <div class="grid2">
+      <div class="card">
+        <h3>摩托车 · 25 m 场（先照准、后测点）</h3>
+        <p><b>核心条款（GB 19152-2025 第 6 章）</b></p>
+        <div class="tbl-wrap"><table style="min-width:0">
+          <thead><tr><th>条款</th><th>要求</th></tr></thead><tbody>
+            <tr><td>6.1.7</td><td>测试距离为基准中心前 25 m</td></tr>
+            <tr><td>6.1.9</td><td>基准中心与测角计旋转中心重合</td></tr>
+            <tr><td>6.3.1.1</td><td>水平：对称光形对 V-V／非对称转角在 V-V</td></tr>
+            <tr><td>6.3.1.2</td><td>垂直：截止线水平部分在 H-H 下 0.57°</td></tr>
+            <tr><td>6.3.2</td><td>远光：最大发光强度区域中心对 HV</td></tr>
+            <tr><td>6.1.6</td><td>受光器有效测量面积 ≤65 mm 正方形</td></tr>
+          </tbody></table></div>
+        <p class="tbl-note">动手四步：布场 → 定位 → 近光照准 → 远光照准，顺序不能反。组合灯（远近光共用调光机构）远光必须在近光照准后的位置直接测量，不允许单独调整（6.2 条）。供电稳压，LED 测试电压 13.2 V（附录 H）；试验条件 23 ℃±5 ℃、湿度 ≤80%、一级照度计（6.1.3 / 6.1.5）。</p>
+      </div>
+      <div class="card">
+        <h3>电动自行车 · 10 m 场（摆正就能测）</h3>
+        <p><b>核心条款（GB/T 31887.1-2019 第 5 章，依 S2 第 64 页整理）</b></p>
+        <div class="tbl-wrap"><table style="min-width:0">
+          <thead><tr><th>项目</th><th>要求</th></tr></thead><tbody>
+            <tr><td>测试距离</td><td>10 m，标准直接规定，无需换算</td></tr>
+            <tr><td>灯具安装</td><td>固定在支架上，光轴水平，灯具中心与 HV 同高</td></tr>
+            <tr><td>照准</td><td>无强制截止线照准；以光轴与屏幕交点为 HV</td></tr>
+            <tr><td>坐标系</td><td>H-H 为水平轴、V-V 为垂直轴，直接读 lux</td></tr>
+            <tr><td>限值</td><td>直接以 lx 给出（EA ≥10、HV ≥50 lx）</td></tr>
+          </tbody></table></div>
+        <p class="tbl-note">动手三步：布场 → 装灯 → 测量，不调灯、不复位、一次测完。<b>口诀：「摆正就能测」</b> —— 无照准、无下倾、直接读 lux。H-H 未在安装说明中定义时二选一：以上照度 ≤2 lx 的线，或 Emax 所在线之上 3.5° 的线。</p>
+      </div>
+    </div>
+    <div class="callout warn"><span class="ct">开测前 10 秒自检清单 <span class="src-tag">S2 第 68 页</span></span>
+      摩托车：距离 25 m □　基准中心重合 □　水平对 V-V □　垂直压 0.57° □　远光 Imax 对 HV □　稳压供电 □<br>
+      电自：10 m 屏 □　光轴水平且与 HV 同高 □　逐点直读 lux □　免照准不下倾 □　按标称电压供电 □　暗室无杂散光 □
+    </div>
+  </section>
+
+  <!-- ============ 07 内控 ============ -->
+  <section class="sec" id="control">
+    <div class="sec-head"><span class="sec-no">07</span><h2>稳定性 · 生产一致性 · 研发内控</h2><span class="sub">附录 C / D / E · 表 10~14 · 1.3× / 0.8×</span></div>
+    <div class="grid2">
+      <div class="card">
+        <h3>附录 C / D / E 判据 <span class="src-tag">S2 第 38~40 页</span></h3>
+        <div class="tbl-wrap"><table style="min-width:0"><thead><tr><th>项目</th><th>判据</th></tr></thead><tbody>
+          <tr><td>附录 C 稳定判据</td><td>15 min 内变化 &lt;3%，或 5 min 内 &lt;1%</td></tr>
+          <tr><td>双状态</td><td>点亮 1 min 与热稳定态两状态均须达标</td></tr>
+          <tr><td>附录 D · 12 h 后</td><td>B50L ≤170 cd；1.5L/R-0.50U ≤255 cd；其余测试点 ≤10%</td></tr>
+          <tr><td>附录 D 截止线漂移</td><td>3 min vs 60 min：上偏 ≤1.0 mrad、下偏 ≤2.0 mrad</td></tr>
+          <tr><td>附录 E 耐候性</td><td>5500~6000 K 黑体、1200 W/m²±200、4500 MJ/m²±200；试后透过率变化 ≤0.020</td></tr>
+          <tr><td>附录 K 机械磨损后</td><td>非对称近光 B50L ≤最大值 130%、75R ≥最小值 90%；单远光 HV ≥最小值 90%</td></tr>
+          <tr><td>生产一致性</td><td>下限 ×0.8；上限按表 10~14 显式值，不能一律 ×1.2</td></tr>
+        </tbody></table></div>
+      </div>
+      <div class="card">
+        <h3>研发内控余量计算器 <span class="src-tag">S2 §8.1 / §12.3</span></h3>
+        <div class="field"><label for="marginVal">标准限值（输入数字，如 12100 或 350）</label><input id="marginVal" type="number" value="12100" min="0" step="10"></div>
+        <div class="field"><label for="marginKind">限值类型</label><select id="marginKind"><option value="1">下限点（要够亮，如 75R / 50V / Imax）</option><option value="0">上限点（别太亮，如 B50L / Ⅲ区）</option></select></div>
+        <div class="result" id="marginOut"></div>
+        <p class="tbl-note">1.3× / 0.8× 是资料给出的行业常用内控经验值，用于覆盖透镜公差、灯珠批次差异与热态光衰。它<b>不是标准条文</b>，是研发设计目标。</p>
+      </div>
+    </div>
+
+    <div class="spacer"></div>
+    <div class="grid2">
+      <div class="figcard"><img src="assets/img/稳定性测试时间线.png" alt="附录 C/D 稳定性测试时间线">
+        <div class="cap"><b>原培训插图 · 附录 C/D 稳定性测试时间线</b>：点亮 → 1 分钟判定 → 持续点亮 → 热稳定（&lt;3%/15 min）→ 稳定态判定 → 12 小时耐久 → B50L ≤170 cd / 截止线漂移 → 判定完成。<span class="src-tag">S6</span></div></div>
+      <div class="figcard"><img src="assets/img/光学损失链.png" alt="MD35 近光与远光光学效率链">
+        <div class="cap"><b>原培训插图 · 近光 / 远光光学效率链</b>：近光 520 → 442 → 332 → 312 → 210 lm；远光 980 → 784 → 549 → 505 → 430 lm。括号百分比为各环节保留率。<span class="src-tag">S6</span></div></div>
+    </div>
+
+    <div class="callout teal"><span class="ct">开模前六项 Checklist <span class="src-tag">S2 第 48 页</span></span>
+      ① 配光：75R / B50L / HV / Imax 四点全核，余量 ≥1.3× / ≤0.8×　② 截止线：清晰度 + 转角对准 V-V，偏移 &lt;1.0 mrad　③ 热态：稳定态衰减仿真 ≤余量，散热路径确认　④ 材料：塑料透镜耐候 / 耐化学 / 附着力按附录 E　⑤ 电控：供电稳压、ADB 分区响应与标定　⑥ 一致性：量产工艺公差 → 配光容差预算。
+    </div>
+    <div class="callout warn"><span class="ct">六个常见误区 <span class="src-tag">S2 第 49 页</span></span>
+      只看下限不看上限 · 瓦数＝亮度 · 冷态合格就交差 · 截止线「差不多就行」 · 拿电自数值套摩托车 · 忽略生产一致性。
+    </div>
+  </section>
+
+  <!-- ============ 08 翻车案例 ============ -->
+  <section class="sec" id="pitfalls">
+    <div class="sec-head"><span class="sec-no">08</span><h2>常见坑与案例复盘</h2><span class="sub">实测 → 回流校准仿真 → 回归优化</span></div>
+    <p class="lead">前两例取自进阶培训 V6.7 §12.6，后四例取自 MD35 全流程教程第十一章；均为资料记录的真实或典型翻车。<span class="src-tag">S2 / S3</span></p>
+    <div class="grid2" id="pitBox"></div>
+    <div class="callout orange"><span class="ct">复盘方法论 <span class="src-tag">S2 §8.4 / §12.6</span></span>仿真 → 打样 → 实测 → 回归，四步闭环；实测数据必须回流校准仿真模型。两个认证翻车案例都输在「余量没留够」：一个仿真只留 1.05×，一个没有按 0.8× 控防眩上限。</div>
+  </section>
+
+  <!-- ============ 09 自测 ============ -->
+  <section class="sec" id="quiz">
+    <div class="sec-head"><span class="sec-no">09</span><h2>十二道自测题</h2><span class="sub">答不上来就回头翻对应章节</span></div>
+    <p class="lead">题目与解析逐字取自进阶培训 V6.7 第 59~60 页。选择后立即显示答案与解析。<span class="src-tag">S2</span></p>
+    <div class="quiz" id="quizBox"></div>
+    <div class="quiz-score">
+      <span>已完成 <b id="quizDone">0 / 12</b>　·　答对 <b id="quizRight">0</b> 题</span>
+      <button id="quizReset">重置作答</button>
+    </div>
+  </section>
+
+  <!-- ============ 10 资料口径 ============ -->
+  <section class="sec" id="caveats">
+    <div class="sec-head"><span class="sec-no">10</span><h2>资料口径与待核项</h2><span class="sub">矛盾不抹平 · 来源可追溯</span></div>
+    <div class="notice">
+      <span class="ni">直谏</span>
+      <span>培训资料并非自洽。以下 6 项是我在逐份读取后发现的<b>互相矛盾记载</b>，网站按「采用哪份 + 保留哪份」明写处理，<b>没有替资料做静默统一</b>。涉及产品定义、认证申报或对外承诺时，请回查标准原文与检测机构意见。</span>
+    </div>
+    <div id="conflictBox"></div>
+
+    <div class="spacer"></div>
+    <div class="tbl-head-row"><h3>资料来源清单 <span class="src-tag">S1~S7</span></h3><span class="src">全部文件位于工作区「培训」目录（S7 为视觉规范）</span></div>
+    <div class="src-grid" id="sourceBox"></div>
+
+    <div class="callout"><span class="ct">未纳入本站的内容</span>
+      「签到表.pdf」为 2026-08-18「二轮车灯入门基础培训」手写签到扫描件，含姓名与工号等个人信息，不纳入公开页面；「关于二轮车车灯相关的一些问题.md」仅列出 5 个待答问题、无答案，本站只引用其题目所指向的标准体系 xlsx 结论；能力展示 PPT 项目（design.md / outline.md）仅用于视觉规范，未作为技术数值来源。
+    </div>
+    <div class="callout warn"><span class="ct">免责与适用范围</span>
+      本站是培训资料的通俗解读与可视化整理，覆盖摩托车（含轻便摩托车 L1~L5）与电动自行车前照灯。所有示意图为教学示意、非按比例。数值为 GB 19152-2025 表 3/4/5/8/9、附录 C/D/E、表 10~14 与 GB/T 31887.1-2019 表 3/4 的节选。<b>不替代标准原文</b>，认证判定以标准原文及检测机构意见为准。
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="foot-inner">
+    <div>
+      <b>MOTORCYCLES ILLUMINATION</b> · 二轮车照明配光技术站<br>
+      <span class="muted">内容基础：益明光电（无锡）· 实益达 SEA STAR 研发中心培训资料（2026-08）</span><br>
+      <span class="muted">视觉规范：二轮车灯设计能力展示 / design.md（深藏青 #0B2545 · 主蓝 #1A5FB4 · 点缀橙 #E8730C）</span>
+    </div>
+    <div style="text-align:right">
+      <b>资料版本</b><br>
+      <span class="muted">进阶培训 V6.7 · 教程 Rev3.3 · 全流程教程 2026-08</span><br>
+      <span class="muted">本站为静态站点，无外部依赖，可离线打开</span>
+    </div>
+  </div>
+</footer>
+
+<script src="assets/data.js"></script>
+<script src="assets/app.js"></script>
+</body>
+</html>
