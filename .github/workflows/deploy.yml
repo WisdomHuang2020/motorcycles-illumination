@@ -166,40 +166,58 @@ jobs:
             # 一律解引用到真实文件再改，软链自然跟着生效。
             CONF=$(readlink -f "$RAW")
             echo "--- $RAW -> $CONF ---"
-            grep -n -E 'try_files|location [^ ]+ \{|server_name' "$CONF" || true
 
-            if grep -q 'try_files \$uri \$uri/ /index.html' "$CONF"; then
-              echo "  already has SPA fallback, skip"
+            # 全程在临时副本上改，最后按字节比对决定是否需要动真文件 ——
+            # 这样「已配置好」时不产生新备份、不 touch 文件、也不 reload。
+            TMP=$(mktemp)
+            cp -p "$CONF" "$TMP"
+
+            # ① try_files 末端 `=404` → `/index.html`
+            sed -i 's|try_files \$uri \$uri/ =404;|try_files $uri $uri/ /index.html;|g' "$TMP"
+
+            # ② 静态目录保留真 404：否则旧缓存页面请求已删除的 hash 文件时，
+            #    会拿到 200 text/html，浏览器报 MIME 错误而不是干净的 404。
+            #    守卫必须**逐 server 块**插入：80 与 443 是两个 server 块，
+            #    只在第一处 location 前插一份的话，https 上仍然没有保护
+            #    （本站 v3.0.0 首次发布就踩过：http 200/404 正确，https 却是 200）。
+            #    做法是「先删掉所有旧守卫行再统一插到每个匹配的 server_name 之后」，
+            #    既覆盖每个块，又天然幂等、不会越堆越多。
+            awk -v h="$HOST" -v b="$BARE" '
+              $0 ~ /location \^~ \/assets\/ \{ try_files \$uri =404; \}/ { next }
+              $0 ~ /location \^~ \/img\/[ ]*\{ try_files \$uri =404; \}/ { next }
+              {
+                print
+                if ($0 ~ /^[ \t]*server_name[ \t]/) {
+                  n = split($0, a, /[ \t]+/)
+                  for (i = 1; i <= n; i++) {
+                    t = a[i]; gsub(/;/, "", t)
+                    if (t == h || t == b) {
+                      print "    location ^~ /assets/ { try_files $uri =404; }"
+                      print "    location ^~ /img/    { try_files $uri =404; }"
+                      break
+                    }
+                  }
+                }
+              }
+            ' "$TMP" > "$TMP.new" && mv "$TMP.new" "$TMP"
+
+            grep -q 'try_files \$uri \$uri/ /index.html' "$TMP" \
+              || { echo "  ERROR: rewrite did not take effect"; rm -f "$TMP"; exit 1; }
+
+            if cmp -s "$TMP" "$CONF"; then
+              echo "  unchanged, skip"
+              rm -f "$TMP"
               continue
             fi
 
             BAK="$CONF.bak.$(date -u +%Y%m%dT%H%M%SZ)"
             cp -p "$CONF" "$BAK"
-            echo "  backup: $BAK"
-
-            # ① try_files 末端 `=404` → `/index.html`
-            sed -i 's|try_files \$uri \$uri/ =404;|try_files $uri $uri/ /index.html;|g' "$CONF"
-
-            # ② 静态目录保留真 404：否则旧缓存页面请求已删除的 hash 文件时，
-            #    会拿到 200 text/html，浏览器报 MIME 错误而不是干净的 404。
-            if ! grep -q 'location \^~ /assets/' "$CONF"; then
-              awk '
-                !done && /location[ \t]+\/[ \t]*\{/ {
-                  print "    location ^~ /assets/ { try_files $uri =404; }"
-                  print "    location ^~ /img/    { try_files $uri =404; }"
-                  print ""
-                  done = 1
-                }
-                { print }
-              ' "$CONF" > "$CONF.new" && mv "$CONF.new" "$CONF"
-              echo "  added static 404 guards for /assets/ and /img/"
-            fi
-
-            if ! grep -q 'try_files \$uri \$uri/ /index.html' "$CONF"; then
-              echo "  ERROR: rewrite did not take effect, restoring"
-              cp -p "$BAK" "$CONF"
-              exit 1
-            fi
+            # 用 cat 覆盖而不是 mv：保留原文件的 inode 与属主权限，
+            # 避免 nginx 读到权限/属主变化。软链已在上面解引用。
+            cat "$TMP" > "$CONF"
+            rm -f "$TMP"
+            echo "  updated (backup: $BAK)"
+            grep -n -E 'try_files|location \^~' "$CONF" || true
             CHANGED=$((CHANGED + 1))
           done
 
@@ -249,28 +267,41 @@ jobs:
           fi
           # v3.0.0：11 个导航项各有独立 URL，全部依赖 SPA 回退。
           # 只要有一条不是 200，就说明 nginx 改写出问题（用户刷新即 404），必须阻断发布。
+          # 80 与 443 是两个独立的 server 块，必须**各测一遍**：
+          # 首次发布时只改了 80 的守卫，http 下负向对照 404 正确、https 下却是 200，
+          # 只测 80 会漏掉。
           ROUTE_OUT=$(ssh $SSH_OPTS "$LH_USER@$LH_HOST" bash -s -- "$CANONICAL_HOST" <<'REMOTE'
           for p in / /basis /screen /paths /tables /workflow /test /control /pitfalls /quiz /caveats; do
-            printf '%s %s\n' "$p" "$(curl -sS -o /dev/null -w '%{http_code}' -H "Host: $1" "http://127.0.0.1$p")"
+            printf 'http%s %s\n' "$p" "$(curl -sS -o /dev/null -w '%{http_code}' -H "Host: $1" "http://127.0.0.1$p")"
           done
           # 静态守卫的负向对照：缺失的 hash 资源必须是真 404，而不是回退出的 index.html
-          printf '%s %s\n' "/assets/nonexistent.js" "$(curl -sS -o /dev/null -w '%{http_code}' -H "Host: $1" 'http://127.0.0.1/assets/nonexistent.js')"
+          printf 'http%s %s\n' "/assets/nonexistent.js" "$(curl -sS -o /dev/null -w '%{http_code}' -H "Host: $1" 'http://127.0.0.1/assets/nonexistent.js')"
+          printf 'http%s %s\n' "/img/nonexistent.png" "$(curl -sS -o /dev/null -w '%{http_code}' -H "Host: $1" 'http://127.0.0.1/img/nonexistent.png')"
+
+          # 443：用 --resolve 把域名钉到回环，证书按域名校验（-k 只跳过链校验的干扰）
+          for p in / /basis /caveats; do
+            printf 'https%s %s\n' "$p" "$(curl -sk -o /dev/null -w '%{http_code}' --resolve "$1:443:127.0.0.1" "https://$1$p")"
+          done
+          printf 'https%s %s\n' "/assets/nonexistent.js" "$(curl -sk -o /dev/null -w '%{http_code}' --resolve "$1:443:127.0.0.1" "https://$1/assets/nonexistent.js")"
           REMOTE
           )
           echo "--- route check ---"
           echo "$ROUTE_OUT"
-          BAD=$(printf '%s\n' "$ROUTE_OUT" | awk '$1 != "/assets/nonexistent.js" && $2 != 200')
+          BAD=$(printf '%s\n' "$ROUTE_OUT" | awk '$1 !~ /nonexistent/ && $2 != 200')
           if [ -n "$BAD" ]; then
             echo "::error::some routes did not return 200 after SPA fallback"
+            echo "$BAD"
             exit 1
           fi
-          GUARD=$(printf '%s\n' "$ROUTE_OUT" | awk '$1 == "/assets/nonexistent.js" { print $2 }')
-          if [ "$GUARD" != "404" ]; then
-            echo "::error::/assets/ guard should return 404 but returned $GUARD"
+          GUARD=$(printf '%s\n' "$ROUTE_OUT" | awk '$1 ~ /nonexistent/ && $2 != 404')
+          if [ -n "$GUARD" ]; then
+            echo "::error::static guard should return 404 (http and https) but did not:"
+            echo "$GUARD"
             exit 1
           fi
-          ROUTES_OK=$(printf '%s\n' "$ROUTE_OUT" | awk '$2 == 200' | wc -l | tr -d ' ')
-          echo "routes ok: $ROUTES_OK / 11 (+ /assets/ guard 404)"
+          ROUTES_OK=$(printf '%s\n' "$ROUTE_OUT" | awk '$1 !~ /nonexistent/ && $2 == 200' | wc -l | tr -d ' ')
+          TOTAL=$(printf '%s\n' "$ROUTE_OUT" | awk '$1 !~ /nonexistent/' | wc -l | tr -d ' ')
+          echo "routes ok: $ROUTES_OK / $TOTAL (11 http + 3 https; 3 static guards 404)"
           echo "DEPLOY_VERIFIED tree=$REMOTE_SHA version=$DEPLOYED_VERSION http=$CODE"
           {
             echo "## Deployment verified"
@@ -281,6 +312,7 @@ jobs:
             echo "| artifact tree | \`$REMOTE_SHA\` |"
             echo "| deployed version | \`$DEPLOYED_VERSION\` |"
             echo "| health (Host header) | HTTP $CODE |"
-            echo "| routes (11, SPA fallback) | $ROUTES_OK / 11 OK |"
+            echo "| routes (http 11 + https 3, SPA fallback) | $ROUTES_OK / $TOTAL OK |"
+            echo "| static guards (http+https) | 404 OK |"
             echo "| webroot | \`$LH_ROOT\` |"
           } >> "$GITHUB_STEP_SUMMARY"
