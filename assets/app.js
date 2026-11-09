@@ -247,20 +247,20 @@ function renderStandards() {
   const t = { head: STANDARDS.head, rows: STANDARDS.rows };
   $('#standardsTable').innerHTML = tableHTML(t) + '<p class="tbl-note">来源：标准体系全面解析 xlsx「问题1-标准体系对比」(S4)。此表为定性对比；该表「问题2」中的具体限值与其他资料冲突，见第 10 节待核项，本站未采用。</p>';
 }
-function renderMd35() {
+function renderSampleData() {
   const bar = (arr, max) => `<div style="display:flex;align-items:flex-end;gap:8px;height:150px;margin:12px 0 6px">
     ${arr.map((d, i) => `<div style="flex:1;text-align:center">
       <div style="font-family:var(--mono);font-size:11px;color:var(--navy);font-weight:800">${d.v}</div>
       <div style="height:${Math.round(d.v / max * 105)}px;background:${['#1A5FB4', '#3B82C4', '#E8A33D', '#E8730C', '#0D9488'][i]};border-radius:5px 5px 0 0;margin-top:3px"></div>
       <div style="font-size:10.5px;color:var(--subtext);line-height:1.35;margin-top:6px">${esc(d.k)}</div>
     </div>`).join('')}</div>`;
-  $('#md35Charts').innerHTML = `
-    <div class="card"><h3>MD35 近光光学效率链 <span class="src-tag">S6 / S3</span></h3>${bar(MD35.near, 520)}
+  $('#sampleCharts').innerHTML = `
+    <div class="card"><h3>近光光学效率链 <span class="src-tag">S6 / S3</span></h3>${bar(SAMPLE_DATA.near, 520)}
       <p class="tbl-note">520 lm 裸模组 → 整灯 210 lm；教程记为光学效率约 50%。</p></div>
-    <div class="card"><h3>MD35 远光光学效率链 <span class="src-tag">S6 / S3</span></h3>${bar(MD35.far, 980)}
+    <div class="card"><h3>远光光学效率链 <span class="src-tag">S6 / S3</span></h3>${bar(SAMPLE_DATA.far, 980)}
       <p class="tbl-note">980 lm 裸模组 → 整灯 430 lm；3 颗 LED 方案。</p></div>`;
-  $('#md35Facts').innerHTML = `<div class="tbl-wrap"><table><thead><tr><th>项目</th><th>实测 / 记录</th><th>来源</th></tr></thead><tbody>
-    ${MD35.facts.map(r => `<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td><td><span class="src-tag">${r[2]}</span></td></tr>`).join('')}
+  $('#sampleFacts').innerHTML = `<div class="tbl-wrap"><table><thead><tr><th>项目</th><th>实测 / 记录</th><th>来源</th></tr></thead><tbody>
+    ${SAMPLE_DATA.facts.map(r => `<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td><td><span class="src-tag">${r[2]}</span></td></tr>`).join('')}
     </tbody></table></div>`;
 }
 
@@ -369,7 +369,7 @@ document.addEventListener('DOMContentLoaded', () => {
   renderStandards();
   renderConflicts();
   renderPitfalls();
-  renderMd35();
+  renderSampleData();
   renderSources();
   renderQuiz();
   $('#quizReset').addEventListener('click', resetQuiz);

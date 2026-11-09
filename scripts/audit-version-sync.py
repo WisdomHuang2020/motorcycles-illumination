@@ -67,7 +67,7 @@ def main():
     else:
         req = urllib.request.Request(
             f"https://api.github.com/repos/{REPO}/releases/tags/{tag}",
-            headers={"Authorization": f"Bearer {token}", "User-Agent": "md35-version-audit"},
+            headers={"Authorization": f"Bearer {token}", "User-Agent": "motor-lighting-version-audit"},
         )
         try:
             with urllib.request.urlopen(req, timeout=20) as resp:

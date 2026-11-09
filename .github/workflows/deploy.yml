@@ -65,7 +65,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          scp $SSH_OPTS site.tar.gz "$DEPLOY_USER@$DEPLOY_HOST:/tmp/md35-site.tar.gz"
+          scp $SSH_OPTS site.tar.gz "$DEPLOY_USER@$DEPLOY_HOST:/tmp/motor-lighting-site.tar.gz"
           echo "uploaded sha256=$(sha256sum site.tar.gz | cut -d' ' -f1)"
 
       - name: Atomic switch on Lighthouse
@@ -75,12 +75,12 @@ jobs:
           ssh $SSH_OPTS "$DEPLOY_USER@$DEPLOY_HOST" bash -s <<'REMOTE'
           set -euo pipefail
           WEBROOT=/var/www/motor-lighting
-          STAGE=$(mktemp -d /var/www/.md35-stage.XXXXXX)
+          STAGE=$(mktemp -d /var/www/.motor-lighting-stage.XXXXXX)
           trap 'rm -rf "$STAGE"' EXIT
-          tar -xzf /tmp/md35-site.tar.gz -C "$STAGE"
+          tar -xzf /tmp/motor-lighting-site.tar.gz -C "$STAGE"
           TS=$(date -u +%Y%m%dT%H%M%SZ)
           if [ -d "$WEBROOT" ]; then
-            cp -a "$WEBROOT" "/var/www/.md35-backup-$TS"
+            cp -a "$WEBROOT" "/var/www/.motor-lighting-backup-$TS"
             mv "$WEBROOT" "$WEBROOT.old"
           fi
           mv "$STAGE" "$WEBROOT"
@@ -88,8 +88,8 @@ jobs:
           chmod -R a=rX,u+w "$WEBROOT"
           nginx -t
           systemctl reload nginx
-          rm -f /tmp/md35-site.tar.gz
-          echo "SWITCH_OK webroot=$WEBROOT backup=/var/www/.md35-backup-$TS"
+          rm -f /tmp/motor-lighting-site.tar.gz
+          echo "SWITCH_OK webroot=$WEBROOT backup=/var/www/.motor-lighting-backup-$TS"
           REMOTE
 
       - name: Verify deployed artifact (fingerprint + HTTP)

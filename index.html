@@ -43,7 +43,7 @@
         <span>电动自行车 · GB/T 31887.1-2019 · 10 m · lx</span>
         <span>进阶培训 V6.7 · 76 页</span>
         <span>教程 Rev3.3 · 14 页</span>
-        <span>全流程教程 · MD35 项目</span>
+        <span>全流程教程 · 11 章 + 附录</span>
       </div>
       <div class="hero-cta">
         <a class="btn btn-primary" href="#screen">打开交互配光屏 →</a>
@@ -241,10 +241,10 @@
       <div class="cap"><b>原培训插图 · 设计全流程图</b>：设计阶段（需求分析 → LED 选型 → 光学设计 → 仿真验证 → 原型制作）、验证阶段（暗室测试 → 分布光度计 → 报告判定 → 稳定性验证 → 型式试验）、量产阶段（生产一致性 → 来料检验 → 在线配光 → 出厂检验 → 市场监督）。<span class="src-tag">S6</span></div></div>
 
     <div class="spacer"></div>
-    <div class="tbl-head-row"><h3>MD35 项目实测数据 <span class="src-tag">S3 / S6</span></h3><span class="src">教程以 MD35 项目经验为基础</span></div>
-    <div class="grid2" id="md35Charts"></div>
+    <div class="tbl-head-row"><h3>样件实测数据 <span class="src-tag">S3 / S6</span></h3><span class="src">数据取自全流程教程实测记录</span></div>
+    <div class="grid2" id="sampleCharts"></div>
     <div class="spacer"></div>
-    <div id="md35Facts"></div>
+    <div id="sampleFacts"></div>
     <div class="callout teal"><span class="ct">区域光通量的旋转不变性 <span class="src-tag">S3 第 7.2 节</span></span>区域Ⅰ＝30L~30R / 1U~15D，区域Ⅱ＝30L~30R / 1U~3.5D（含于Ⅰ内）。绕光轴旋转不改变区域光通量，因此其判定与照准无关；IES 的 candela multiplier 偏差只影响绝对值，不影响角度分布占比。</div>
   </section>
 
@@ -316,7 +316,7 @@
     <div class="grid2">
       <div class="figcard"><img src="assets/img/稳定性测试时间线.png" alt="附录 C/D 稳定性测试时间线">
         <div class="cap"><b>原培训插图 · 附录 C/D 稳定性测试时间线</b>：点亮 → 1 分钟判定 → 持续点亮 → 热稳定（&lt;3%/15 min）→ 稳定态判定 → 12 小时耐久 → B50L ≤170 cd / 截止线漂移 → 判定完成。<span class="src-tag">S6</span></div></div>
-      <div class="figcard"><img src="assets/img/光学损失链.png" alt="MD35 近光与远光光学效率链">
+      <div class="figcard"><img src="assets/img/光学损失链.png" alt="近光与远光光学效率链">
         <div class="cap"><b>原培训插图 · 近光 / 远光光学效率链</b>：近光 520 → 442 → 332 → 312 → 210 lm；远光 980 → 784 → 549 → 505 → 430 lm。括号百分比为各环节保留率。<span class="src-tag">S6</span></div></div>
     </div>
 
@@ -331,7 +331,7 @@
   <!-- ============ 08 翻车案例 ============ -->
   <section class="sec" id="pitfalls">
     <div class="sec-head"><span class="sec-no">08</span><h2>常见坑与案例复盘</h2><span class="sub">实测 → 回流校准仿真 → 回归优化</span></div>
-    <p class="lead">前两例取自进阶培训 V6.7 §12.6，后四例取自 MD35 全流程教程第十一章；均为资料记录的真实或典型翻车。<span class="src-tag">S2 / S3</span></p>
+    <p class="lead">前两例取自进阶培训 V6.7 §12.6，后四例取自《摩托车前照灯设计全流程教程》第十一章；均为资料记录的真实或典型翻车。<span class="src-tag">S2 / S3</span></p>
     <div class="grid2" id="pitBox"></div>
     <div class="callout orange"><span class="ct">复盘方法论 <span class="src-tag">S2 §8.4 / §12.6</span></span>仿真 → 打样 → 实测 → 回归，四步闭环；实测数据必须回流校准仿真模型。两个认证翻车案例都输在「余量没留够」：一个仿真只留 1.05×，一个没有按 0.8× 控防眩上限。</div>
   </section>
