@@ -17,10 +17,15 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  # 仓库为 public，服务器地址与登录用户不写明文，一律走 Secrets
-  DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
-  DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
-  DEPLOY_WEBROOT: /var/www/motor-lighting
+  # 站群统一前缀 LH_*（Lighthouse），与 control-mode / 主入口一致。
+  # 回退链 `secrets.LH_X || secrets.DEPLOY_X` 是过渡期兼容：新 secret 配好前仍用旧值，
+  # 配好后本文件再收紧为 ${{ secrets.LH_X }}，旧的三条即可在页面上删除。
+  LH_HOST: ${{ secrets.LH_HOST || secrets.DEPLOY_HOST }}
+  LH_USER: ${{ secrets.LH_USER || secrets.DEPLOY_USER }}
+  # 目标目录与端口在多数派里也走 secret；未配置时回落到本站固定值，
+  # 避免空值把产物写进 / 或落到非预期目录。
+  LH_ROOT: ${{ secrets.LH_ROOT || '/var/www/motor-lighting' }}
+  LH_PORT: ${{ secrets.LH_PORT || '22' }}
   CANONICAL_HOST: www.motor-lighting.power-knowledge.tech
 
 jobs:
@@ -64,40 +69,50 @@ jobs:
 
       - name: Prepare SSH key
         env:
-          # 多行私钥必须经 env 注入；直接写进 run 脚本文本会破坏 shell 语法
-          DEPLOY_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          # 多行私钥必须经 env 注入；直接写进 run 脚本文本会破坏 shell 语法。
+          # 私钥只在需要它的这一步可见，不放 job 级 env。
+          LH_SSH_KEY: ${{ secrets.LH_SSH_KEY || secrets.DEPLOY_SSH_KEY }}
         shell: bash
         run: |
           set -euo pipefail
-          test -n "$DEPLOY_HOST" || { echo "::error::secret DEPLOY_HOST is missing"; exit 1; }
-          test -n "$DEPLOY_USER" || { echo "::error::secret DEPLOY_USER is missing"; exit 1; }
-          test -n "$DEPLOY_KEY"  || { echo "::error::secret DEPLOY_SSH_KEY is missing"; exit 1; }
+          test -n "$LH_HOST"    || { echo "::error::secret LH_HOST is missing"; exit 1; }
+          test -n "$LH_USER"    || { echo "::error::secret LH_USER is missing"; exit 1; }
+          test -n "$LH_SSH_KEY" || { echo "::error::secret LH_SSH_KEY is missing"; exit 1; }
           mkdir -p ~/.ssh
-          printf '%s\n' "$DEPLOY_KEY" > ~/.ssh/deploy_key
+          printf '%s\n' "$LH_SSH_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
-          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
-          echo "SSH_OPTS=-i $HOME/.ssh/deploy_key -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=15" >> "$GITHUB_ENV"
+          ssh-keyscan -p "$LH_PORT" -H "$LH_HOST" >> ~/.ssh/known_hosts
+          # ssh 与 scp 的端口参数**大小写不同**：ssh 是 -p，scp 是 -P。
+          # 混用会让 scp 把端口号当成源文件名（-p 在 scp 里是"保留时间戳"且不接参数），
+          # 所以这里拆成两个变量，各给各自的命令用。
+          COMMON="-i $HOME/.ssh/deploy_key -o BatchMode=yes -o StrictHostKeyChecking=yes -o ConnectTimeout=15"
+          echo "SSH_OPTS=$COMMON -p $LH_PORT" >> "$GITHUB_ENV"
+          echo "SCP_OPTS=$COMMON -P $LH_PORT" >> "$GITHUB_ENV"
 
       - name: Upload tarball
         shell: bash
         run: |
           set -euo pipefail
-          scp $SSH_OPTS site.tar.gz "$DEPLOY_USER@$DEPLOY_HOST:/tmp/motor-lighting-site.tar.gz"
+          scp $SCP_OPTS site.tar.gz "$LH_USER@$LH_HOST:/tmp/motor-lighting-site.tar.gz"
           echo "uploaded sha256=$(sha256sum site.tar.gz | cut -d' ' -f1)"
 
       - name: Atomic switch on Lighthouse
         shell: bash
         run: |
           set -euo pipefail
-          ssh $SSH_OPTS "$DEPLOY_USER@$DEPLOY_HOST" bash -s <<'REMOTE'
+          # heredoc 保持 quoted，避免本地把远端变量（$STAGE / $TS）提前展开成空；
+          # 需要在远端使用的目标目录改为位置参数传入（bash -s -- "$LH_ROOT"）。
+          ssh $SSH_OPTS "$LH_USER@$LH_HOST" bash -s -- "$LH_ROOT" <<'REMOTE'
           set -euo pipefail
-          WEBROOT=/var/www/motor-lighting
-          STAGE=$(mktemp -d /var/www/.motor-lighting-stage.XXXXXX)
+          WEBROOT="$1"
+          # 暂存目录与 webroot 同父级，保证 mv 是同一文件系统内的原子重命名
+          BASE=$(dirname "$WEBROOT")
+          STAGE=$(mktemp -d "$BASE/.motor-lighting-stage.XXXXXX")
           trap 'rm -rf "$STAGE"' EXIT
           tar -xzf /tmp/motor-lighting-site.tar.gz -C "$STAGE"
           TS=$(date -u +%Y%m%dT%H%M%SZ)
           if [ -d "$WEBROOT" ]; then
-            cp -a "$WEBROOT" "/var/www/.motor-lighting-backup-$TS"
+            cp -a "$WEBROOT" "$BASE/.motor-lighting-backup-$TS"
             # 上一次部署留下的 .old 若仍存在，mv 会把当前目录嵌套进去而非替换，
             # 导致回滚目录逐次堆叠；已有带时间戳的备份，这里可安全清理。
             rm -rf "$WEBROOT.old"
@@ -109,28 +124,28 @@ jobs:
           nginx -t
           systemctl reload nginx
           rm -f /tmp/motor-lighting-site.tar.gz
-          echo "SWITCH_OK webroot=$WEBROOT backup=/var/www/.motor-lighting-backup-$TS"
+          echo "SWITCH_OK webroot=$WEBROOT backup=$BASE/.motor-lighting-backup-$TS"
           REMOTE
 
       - name: Verify deployed artifact (fingerprint + version + HTTP)
         shell: bash
         run: |
           set -euo pipefail
-          REMOTE_SHA=$(ssh $SSH_OPTS "$DEPLOY_USER@$DEPLOY_HOST" \
-            "cd $DEPLOY_WEBROOT && find . -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum | sha256sum | cut -d' ' -f1")
+          REMOTE_SHA=$(ssh $SSH_OPTS "$LH_USER@$LH_HOST" \
+            "cd $LH_ROOT && find . -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum | sha256sum | cut -d' ' -f1")
           echo "local  tree = $LOCAL_SHA"
           echo "remote tree = $REMOTE_SHA"
           if [ "$LOCAL_SHA" != "$REMOTE_SHA" ]; then
             echo "::error::deployed artifact fingerprint mismatch"
             exit 1
           fi
-          DEPLOYED_VERSION=$(ssh $SSH_OPTS "$DEPLOY_USER@$DEPLOY_HOST" "cat $DEPLOY_WEBROOT/.deployed-version")
+          DEPLOYED_VERSION=$(ssh $SSH_OPTS "$LH_USER@$LH_HOST" "cat $LH_ROOT/.deployed-version")
           echo "deployed version = $DEPLOYED_VERSION"
           if ! printf '%s' "$DEPLOYED_VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
             echo "::error::.deployed-version is not a SemVer triple"
             exit 1
           fi
-          CODE=$(ssh $SSH_OPTS "$DEPLOY_USER@$DEPLOY_HOST" \
+          CODE=$(ssh $SSH_OPTS "$LH_USER@$LH_HOST" \
             "curl -sS -o /dev/null -w '%{http_code}' -H 'Host: $CANONICAL_HOST' http://127.0.0.1/")
           echo "health: http://127.0.0.1/ (Host=$CANONICAL_HOST) -> $CODE"
           if [ "$CODE" != "200" ]; then
@@ -147,5 +162,5 @@ jobs:
             echo "| artifact tree | \`$REMOTE_SHA\` |"
             echo "| deployed version | \`$DEPLOYED_VERSION\` |"
             echo "| health (Host header) | HTTP $CODE |"
-            echo "| webroot | \`$DEPLOY_WEBROOT\` |"
+            echo "| webroot | \`$LH_ROOT\` |"
           } >> "$GITHUB_STEP_SUMMARY"
