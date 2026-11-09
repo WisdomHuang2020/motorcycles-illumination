@@ -1,7 +1,7 @@
 {
   "name": "motorcycles-illumination",
   "private": true,
-  "version": "2.0.0",
+  "version": "2.0.1",
   "license": "MIT",
   "type": "module",
   "description": "二轮车照明配光技术站 · power-knowledge.tech 站群成员",

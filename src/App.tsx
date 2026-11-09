@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Github, House } from 'lucide-react'
 import type { TableKey } from './data'
 import ThemeSwitcher from './components/ThemeSwitcher'
 import BeamPanel from './components/BeamPanel'
@@ -60,11 +61,12 @@ export default function App() {
       <header className="topbar">
         <div className="bar">
           <div className="brand">
-            <i className="mark" />
-            <b>MOTORCYCLES ILLUMINATION</b>
-            <span>二轮车照明配光技术站</span>
+            <i className="mark" aria-hidden="true" />
+            <span className="brand-text">
+              <b className="brand-en">MOTORCYCLES ILLUMINATION</b>
+              <span className="brand-sub">二轮车照明配光技术站</span>
+            </span>
           </div>
-          <ThemeSwitcher />
           <button
             className="nav-toggle"
             type="button"
@@ -86,6 +88,8 @@ export default function App() {
               </a>
             ))}
           </nav>
+          {/* 8 色主题切换器固定在顶栏最右侧，排在导航之后，不参与导航宽度分配 */}
+          <ThemeSwitcher />
         </div>
       </header>
 
@@ -375,17 +379,92 @@ export default function App() {
       </main>
 
       <footer>
-        <div className="foot-inner">
-          <div>
-            <b>MOTORCYCLES ILLUMINATION</b> · 二轮车照明配光技术站<br />
-            <span className="muted">内容基础：益明光电（无锡）· 实益达 SEA STAR 研发中心培训资料（2026-08）</span><br />
-            <span className="muted">视觉规范：power-knowledge.tech 站群通用 8 套主题（主入口 / LLC 系列一致）</span>
+        <div className="foot-wrap">
+          <div className="foot-grid">
+            <div className="foot-col">
+              <div className="foot-brand">
+                <i className="mark" aria-hidden="true" />
+                <b>MOTORCYCLES ILLUMINATION</b>
+              </div>
+              <p className="foot-desc">
+                把 GB 19152-2025（25 m / cd）与 GB/T 31887.1-2019（10 m / lx）两套体系整理成可交互的配光知识站：
+                逐表速查、配光屏点位、光型四态、cd↔lx 换算与研发内控判断。
+              </p>
+              <p className="foot-note foot-note-tight">
+                视觉规范：power-knowledge.tech 站群通用 8 套主题，与主入口 / LLC 系列一致。
+              </p>
+              <a className="foot-back" href="https://power-knowledge.tech/">
+                <House size={16} strokeWidth={2} aria-hidden="true" />
+                返回站群入口
+              </a>
+            </div>
+
+            <div className="foot-col">
+              <h4>章节导航</h4>
+              <div className="foot-links">
+                {NAV.map((n) => (
+                  <a key={n.href} href={n.href}>{n.label}</a>
+                ))}
+              </div>
+            </div>
+
+            <div className="foot-col">
+              <h4>资料口径</h4>
+              <p className="foot-note">
+                内容基础：益明光电（无锡）· 实益达 SEA STAR 研发中心培训资料（2026-08）——
+                进阶培训 V6.7 · 教程 Rev3.3 · 设计全流程教程 2026-08。
+              </p>
+              <p className="foot-note">
+                资料内部 6 处矛盾逐条并列保留，不做静默统一；实际判定以标准正文与主机厂技术要求为准。
+              </p>
+              <h4 className="foot-h-gap">版权</h4>
+              <p className="foot-note">
+                站内引用的标准条文、培训教程与插图，版权归各自权利人所有，仅作技术说明与教学引用。
+              </p>
+            </div>
           </div>
-          <div style={{ textAlign: 'right' }}>
-            <b>资料版本</b><br />
-            <span className="muted">进阶培训 V6.7 · 教程 Rev3.3 · 全流程教程 2026-08</span><br />
-            <span className="muted">Vite · React · TypeScript · Tailwind 4 构建，无后端依赖</span><br />
-            <span className="app-version">{__APP_VERSION__}</span>
+
+          <div className="foot-legal">
+            <div>
+              <p className="foot-copy">© 2026 二轮车照明配光技术站 · 结果仅供工程估算与学习参考</p>
+              {/* 备案信息：工信部与公安联网备案均要求网站底部公开展示，与站群其余站同一套主体备案号 */}
+              <div className="foot-beian">
+                <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer">
+                  苏ICP备2026073104号-1
+                </a>
+                <a
+                  href="https://beian.mps.gov.cn/#/query/webSearch?code=32021402005238"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  <img src="/beian.png" alt="" />
+                  苏公网安备32021402005238号
+                </a>
+              </div>
+            </div>
+            <div className="foot-legal-right">
+              <span className="app-version">{__APP_VERSION__}</span>
+              <a
+                href="https://github.com/WisdomHuang2020/motorcycles-illumination"
+                target="_blank"
+                rel="noreferrer"
+              >
+                <Github size={15} strokeWidth={2} aria-hidden="true" />
+                GitHub
+              </a>
+            </div>
+          </div>
+
+          <div className="foot-disclaimer">
+            <p>
+              <b>免责声明：</b>本站为个人非商业性技术分享。全部表格数据、换算与判定结论基于公开标准文本与解析近似，
+              仅供工程估算与学习研究参考，不构成设计保证，亦不替代标准正文、认证机构判定、实测光型与第三方专业复核。
+              任何主体引用本站内容或据此作出的工程决策，风险与责任由该主体自行承担；因使用本站内容所产生的间接损失，本站不予承担。
+            </p>
+            <p>
+              站内表格、图示与文字为作者整理或基于公开资料绘制，著作权归作者所有；文中提及的标准、软件、
+              商标与厂商名称，权利均归各自权利人所有，仅作技术说明引用，不代表任何隶属、赞助或背书关系。
+            </p>
           </div>
         </div>
       </footer>
