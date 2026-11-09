@@ -54,7 +54,14 @@ jobs:
             echo "::notice::Release $TAG 已存在，跳过"
             exit 0
           fi
-          NOTES=$(git log -1 --pretty=%B "$TAG")
+          # 发版说明取 annotated tag 的正文：`git log -1` 只会拿到 tag 所指向 commit 的
+          # message，那通常是「最后一处修复」，而不是整版变更（v3.0.0 就是这样，
+          # Release 里只剩一条补丁说明）。tag 没有正文时再回退到 commit message。
+          NOTES=$(git tag -l --format='%(contents)' "$TAG")
+          if [ -z "$(printf '%s' "$NOTES" | tr -d '[:space:]')" ]; then
+            echo "::notice::tag 无正文，回退到 commit message"
+            NOTES=$(git log -1 --pretty=%B "$TAG")
+          fi
           printf '%s\n' "$NOTES" > /tmp/notes.md
           gh release create "$TAG" --title "$TAG" --notes-file /tmp/notes.md --verify-tag
           echo "::notice::Release $TAG 创建完成"
