@@ -50,18 +50,31 @@ jobs:
           TAG: ${{ steps.resolve.outputs.tag }}
         run: |
           set -euo pipefail
-          if gh release view "$TAG" >/dev/null 2>&1; then
-            echo "::notice::Release $TAG 已存在，跳过"
-            exit 0
-          fi
-          # 发版说明取 annotated tag 的正文：`git log -1` 只会拿到 tag 所指向 commit 的
-          # message，那通常是「最后一处修复」，而不是整版变更（v3.0.0 就是这样，
-          # Release 里只剩一条补丁说明）。tag 没有正文时再回退到 commit message。
-          NOTES=$(git tag -l --format='%(contents)' "$TAG")
+          # 发版说明以 CHANGELOG.md 里该版本段落为准 —— 它是仓库内的发版记录，
+          # 内容完整且与 VERSION 同步。另外两条路都不可靠：
+          #   · `git log -1 <tag>` 只拿到最后一笔 commit 的 message，两笔提交的发版
+          #     就只剩一条补丁说明（v3.0.0 实测如此）；
+          #   · `git tag -l --format='%(contents)'` 在 actions/checkout 取到的 tag
+          #     引用上会退化成 commit message（annotated 对象没保留下来）。
+          NOTES=$(awk -v v="$TAG" '
+            index($0, "## " v " ") == 1 { f = 1; next }
+            f && index($0, "## ") == 1 { exit }
+            f { print }
+          ' CHANGELOG.md)
           if [ -z "$(printf '%s' "$NOTES" | tr -d '[:space:]')" ]; then
-            echo "::notice::tag 无正文，回退到 commit message"
-            NOTES=$(git log -1 --pretty=%B "$TAG")
+            echo "::notice::CHANGELOG 无 $TAG 段落，回退到 tag 正文 / commit message"
+            NOTES=$(git tag -l --format='%(contents)' "$TAG")
+            if [ -z "$(printf '%s' "$NOTES" | tr -d '[:space:]')" ]; then
+              NOTES=$(git log -1 --pretty=%B "$TAG")
+            fi
           fi
           printf '%s\n' "$NOTES" > /tmp/notes.md
+          # 已存在则更新正文而不是直接跳过：改了发版说明的生成方式后，
+          # 重新 dispatch 就能把历史 Release 的内容一并修正过来。
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release edit "$TAG" --notes-file /tmp/notes.md
+            echo "::notice::Release $TAG 已存在，正文已更新"
+            exit 0
+          fi
           gh release create "$TAG" --title "$TAG" --notes-file /tmp/notes.md --verify-tag
           echo "::notice::Release $TAG 创建完成"
