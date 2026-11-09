@@ -49,11 +49,19 @@ def main():
         _, typ, err = run(["git", "cat-file", "-t", tag])
         add("tag 为 annotated", typ == "tag", f"git cat-file -t {tag} -> {typ or err[:60]}")
 
-    # 3) tag 指向 HEAD
+    # 3) tag 必须在 HEAD 历史里 —— 不要求 tag 恰好等于 HEAD：
+    #    发版后继续提交 CI / 文档类改动是常态（v3.0.0 打 tag 后又修了 release.yml 的
+    #    Notes 生成），硬要求相等会逼着每次琐碎改动都去强推 tag，那更危险。
+    #    这里改为判断 tag 是 HEAD 的祖先，并把「tag 之后还有几个提交」显式打出来。
     _, tagged, _ = run(["git", "rev-list", "-n", "1", tag])
     _, head, _ = run(["git", "rev-parse", "HEAD"])
-    add("tag 指向当前 HEAD", bool(tagged) and tagged == head,
-        f"{tagged[:8] or '-'} vs {head[:8] or '-'}")
+    if tagged and head:
+        rc, _, _ = run(["git", "merge-base", "--is-ancestor", tag, "HEAD"])
+        ahead = run(["git", "rev-list", "--count", f"{tag}..HEAD"])[1] or "?"
+        add("tag 已在 HEAD 历史中", rc == 0,
+            f"tag {tagged[:8]} / HEAD {head[:8]}，tag 之后另有 {ahead} 个提交")
+    else:
+        add("tag 已在 HEAD 历史中", False, f"{tagged[:8] or '-'} vs {head[:8] or '-'}")
 
     # 4) 远端 tag
     _, remote, err = run(["git", "ls-remote", "--tags", "origin", tag], timeout=45)
