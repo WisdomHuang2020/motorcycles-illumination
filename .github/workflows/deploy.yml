@@ -40,7 +40,9 @@ jobs:
           cp -a index.html assets dist/
           find dist -type d -name '.playwright-cli' -prune -exec rm -rf {} +
           find dist -type f -name '*.log' -delete
-          (cd dist && find . -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum | cut -d' ' -f1) > dist.sha256
+          # 中文图片文件名在 zh_CN.UTF-8 与 C.UTF-8 下排序结果不同，必须固定 LC_ALL=C，
+          # 否则同一批文件在 runner 与服务器上会算出不同的目录树指纹（假红）。
+          (cd dist && find . -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum | sha256sum | cut -d' ' -f1) > dist.sha256
           tar -czf site.tar.gz -C dist .
           echo "LOCAL_SHA=$(cat dist.sha256)" >> "$GITHUB_ENV"
           echo "artifact: $(find dist -type f | wc -l) files, $(du -sh dist | cut -f1), tree=$(cat dist.sha256)"
@@ -81,6 +83,9 @@ jobs:
           TS=$(date -u +%Y%m%dT%H%M%SZ)
           if [ -d "$WEBROOT" ]; then
             cp -a "$WEBROOT" "/var/www/.motor-lighting-backup-$TS"
+            # 上一次部署留下的 .old 若仍存在，mv 会把当前目录嵌套进去而非替换，
+            # 导致回滚目录逐次堆叠；已有带时间戳的备份，这里可安全清理。
+            rm -rf "$WEBROOT.old"
             mv "$WEBROOT" "$WEBROOT.old"
           fi
           mv "$STAGE" "$WEBROOT"
@@ -97,7 +102,7 @@ jobs:
         run: |
           set -euo pipefail
           REMOTE_SHA=$(ssh $SSH_OPTS "$DEPLOY_USER@$DEPLOY_HOST" \
-            "cd $DEPLOY_WEBROOT && find . -type f -print0 | sort -z | xargs -0 sha256sum | sha256sum | cut -d' ' -f1")
+            "cd $DEPLOY_WEBROOT && find . -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum | sha256sum | cut -d' ' -f1")
           echo "local  tree = $LOCAL_SHA"
           echo "remote tree = $REMOTE_SHA"
           if [ "$LOCAL_SHA" != "$REMOTE_SHA" ]; then
