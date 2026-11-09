@@ -3,10 +3,12 @@
 verify-*.png
 *.log
 
-# 本地构建产物
+# Node 依赖与本地构建产物（package-lock.json 需入库，CI 用 npm ci）
+node_modules/
 dist/
 site.tar.gz
 dist.sha256
+.vite/
 
 # Python 编译缓存
 __pycache__/

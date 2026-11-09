@@ -3,6 +3,19 @@
 本文件记录可发布版本的变更。版本号的**单一来源**是仓库根目录的 `VERSION`，
 发版时须用 `scripts/audit-version-sync.py` 做一致性审计。格式遵循 SemVer。
 
+## v2.0.0 — 2026-11-09
+
+全量技术栈重建：对齐 power-knowledge.tech 站群（LLC 系列 / 主入口）的风格与技术栈。主版本号递进，因为不再是「换皮」而是重写。
+
+- **技术栈**：Vite 6 + React 19 + TypeScript 5.7 + Tailwind 4 + lucide-react；`assets/{data.js,app.js,style.css}` 的原生 JS 拼接渲染改为 `src/data.ts` 数据层 + 有状态 React 组件，部署产物由 `npm ci && npm run build` 生成 `dist/`。
+- **8 色风格**：确认站群所谓「8 色」是 8 套可切换主题而非 8 个装饰色，完整接入 `dark-teal` / `blue` / `navy-tech` / `graphite` / `warm-paper` / `forest` / `indigo` / `sea-salt`。契约与站群一致：`?theme=` 优先 → `localStorage['pk-theme']` → 默认 `dark-teal`，`html[data-theme]` 驱动 11 个 `--color-*` 变量，首屏内联脚本防闪，`meta[name=theme-color]` 同步。
+- **样式变量化**：v1 是浅底深字，站群含 3 套深色底，因此全部硬编码颜色改为变量派生，避免深色主题白底白字 / 浅色主题深底深字。Hero 教学光型图保留深色画布（暗室配光屏的物理语境）。
+- **内容 1:1 迁移**：10 分区、14 张表、4 组光型、4 组配光屏点位（10/6/7/7）、3 阶段 15 步流程、6 项资料矛盾、6 个翻车案例、12 道自测、7 张培训插图、9 条标准对照、6 行样件实测，数值与来源编号 S1~S7 逐字未改；页面仍不含具体项目代号。
+- **元信息更正**：页脚原写「视觉规范：深藏青/主蓝/点缀橙」与「静态站点、无外部依赖、可离线打开」，重建后均已不成立，改为站群 8 套主题与实际构建栈，并显示 `__APP_VERSION__`；签到表个人信息仍未纳入。
+- **部署链路**：工作流新增 setup-node / `npm ci` / `npm run build`，产物取 `dist/`；`VERSION` 与 `package.json` 一致性设为构建门禁；随产物写入 `dist/.deployed-version`（供主入口 `/api/version/motor-lighting` 读取），并在校验步骤验证其为三段式版本号。保留 `LC_ALL=C` 目录树指纹、tar over SSH 原子切换、Host 头回环健康检查。
+- **回归验证**：本地 `tsc --noEmit && vite build` 通过；浏览器实跑确认控制台 / 页面异常 / 失败请求均 0，7 张插图全部解码成功，全部交互可用，8 套主题逐套生效且刷新保持、`?theme=` 可覆盖，1280 / 820 / 375 三档视口零横向溢出。
+- v1 的 `assets/` 保留在仓库供回溯，已加入 `paths-ignore`，不再参与构建与部署。
+
 ## v1.0.4 — 2026-11-09
 
 HTTPS 正式上线（站点内容与部署工作流未改动，变更为服务器侧配置与证书）。

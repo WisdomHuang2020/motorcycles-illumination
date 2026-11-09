@@ -1,14 +1,15 @@
 name: Deploy · motorcycles illumination
 
-# push main 自动部署；纯文档 / 版本 / 审计脚本变更不触发。
-# DNS 与证书就绪前本工作流仍可部署，健康检查用 Host 头回环，不依赖公网解析。
+# push main 自动部署；纯文档 / 审计脚本 / v1 遗留静态源码不触发。
+# VERSION 必须参与触发：它决定随产物写入的 .deployed-version，门户据此显示实时版本。
+# DNS 与证书异常时本工作流仍可部署，健康检查用 Host 头回环，不依赖公网解析。
 on:
   push:
     branches: [main]
     paths-ignore:
       - 'CHANGELOG.md'
-      - 'VERSION'
       - 'scripts/**'
+      - 'assets/**'
   workflow_dispatch:
 
 concurrency:
@@ -24,28 +25,42 @@ env:
 
 jobs:
   deploy:
-    name: Build → upload → atomic switch → verify
+    name: npm build → upload → atomic switch → verify
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 12
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies and build
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci
+          npm run build
 
       - name: Build artifact and compute tree fingerprint
         shell: bash
         run: |
           set -euo pipefail
-          rm -rf dist site.tar.gz
-          mkdir -p dist
-          cp -a index.html assets dist/
-          find dist -type d -name '.playwright-cli' -prune -exec rm -rf {} +
-          find dist -type f -name '*.log' -delete
+          # VERSION 是版本号单一来源；package.json 必须同步，否则页脚与门户版本号会漂移。
+          node -e "const fs=require('fs');const p=require('./package.json');const v=fs.readFileSync('VERSION','utf8').trim();if(p.version!==v){console.error('VERSION ('+v+') != package.json ('+p.version+')');process.exit(1)}"
+          # 门户 /api/version/<id> 读取 web_root/.deployed-version。随产物一起打包，
+          # 才能让构建端与服务器端的目录树指纹包含同一个文件、两端一致。
+          printf '%s\n' "$(cat VERSION)" > dist/.deployed-version
+          rm -f site.tar.gz
           # 中文图片文件名在 zh_CN.UTF-8 与 C.UTF-8 下排序结果不同，必须固定 LC_ALL=C，
           # 否则同一批文件在 runner 与服务器上会算出不同的目录树指纹（假红）。
           (cd dist && find . -type f -print0 | LC_ALL=C sort -z | xargs -0 sha256sum | sha256sum | cut -d' ' -f1) > dist.sha256
           tar -czf site.tar.gz -C dist .
           echo "LOCAL_SHA=$(cat dist.sha256)" >> "$GITHUB_ENV"
-          echo "artifact: $(find dist -type f | wc -l) files, $(du -sh dist | cut -f1), tree=$(cat dist.sha256)"
+          echo "artifact: $(find dist -type f | wc -l) files, $(du -sh dist | cut -f1), tree=$(cat dist.sha256), version=$(cat VERSION)"
 
       - name: Prepare SSH key
         env:
@@ -97,7 +112,7 @@ jobs:
           echo "SWITCH_OK webroot=$WEBROOT backup=/var/www/.motor-lighting-backup-$TS"
           REMOTE
 
-      - name: Verify deployed artifact (fingerprint + HTTP)
+      - name: Verify deployed artifact (fingerprint + version + HTTP)
         shell: bash
         run: |
           set -euo pipefail
@@ -109,6 +124,12 @@ jobs:
             echo "::error::deployed artifact fingerprint mismatch"
             exit 1
           fi
+          DEPLOYED_VERSION=$(ssh $SSH_OPTS "$DEPLOY_USER@$DEPLOY_HOST" "cat $DEPLOY_WEBROOT/.deployed-version")
+          echo "deployed version = $DEPLOYED_VERSION"
+          if ! printf '%s' "$DEPLOYED_VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::.deployed-version is not a SemVer triple"
+            exit 1
+          fi
           CODE=$(ssh $SSH_OPTS "$DEPLOY_USER@$DEPLOY_HOST" \
             "curl -sS -o /dev/null -w '%{http_code}' -H 'Host: $CANONICAL_HOST' http://127.0.0.1/")
           echo "health: http://127.0.0.1/ (Host=$CANONICAL_HOST) -> $CODE"
@@ -116,7 +137,7 @@ jobs:
             echo "::error::health check did not return 200"
             exit 1
           fi
-          echo "DEPLOY_VERIFIED tree=$REMOTE_SHA http=$CODE"
+          echo "DEPLOY_VERIFIED tree=$REMOTE_SHA version=$DEPLOYED_VERSION http=$CODE"
           {
             echo "## Deployment verified"
             echo ""
@@ -124,6 +145,7 @@ jobs:
             echo "| --- | --- |"
             echo "| commit | \`${{ github.sha }}\` |"
             echo "| artifact tree | \`$REMOTE_SHA\` |"
+            echo "| deployed version | \`$DEPLOYED_VERSION\` |"
             echo "| health (Host header) | HTTP $CODE |"
             echo "| webroot | \`$DEPLOY_WEBROOT\` |"
           } >> "$GITHUB_STEP_SUMMARY"
