@@ -127,6 +127,101 @@ jobs:
           echo "SWITCH_OK webroot=$WEBROOT backup=$BASE/.motor-lighting-backup-$TS"
           REMOTE
 
+      # v3.0.0 起站点从「单页 hash 导航」改为「每节一个独立 URL」，`/basis`、`/caveats`
+      # 这类深链接必须回退到 index.html，否则刷新 / 直接粘贴链接就是 404。
+      # 站点配置不在仓库里（机器上的 nginx conf），只能借部署通道就地改写：
+      # 脚本幂等（已有回退直接跳过），改动前备份，nginx -t 不过会自动还原。
+      - name: Ensure SPA fallback in nginx
+        shell: bash
+        run: |
+          set -euo pipefail
+          ssh $SSH_OPTS "$LH_USER@$LH_HOST" bash -s -- "$CANONICAL_HOST" <<'REMOTE'
+          set -euo pipefail
+          HOST="$1"
+          # server_name 里不一定写 www.，用去掉前缀的域名做主匹配键（它是带 www 形式的后缀）
+          BARE="${HOST#www.}"
+
+          # 配置位置各机器不同（sites-available/x、conf.d/x.conf…），用 `nginx -T` 的
+          # 「# configuration file」分隔标记反查真正服务本站的文件，不写死路径。
+          # 该行末尾带冒号，$4 要把 `:` 去掉；80 与 443 若分文件则都会被列出。
+          # 匹配必须按 server_name 的 token 精确比对：用 index() 做子串匹配时
+          # `x.motor-lighting.power-knowledge.tech.evil.com` 也会命中。
+          FILES=$(nginx -T 2>/dev/null | awk -v h="$HOST" -v b="$BARE" '
+            /^# configuration file / { f = $4; sub(/:$/, "", f) }
+            index($0, "server_name") {
+              n = split($0, a, /[ \t]+/)
+              for (i = 1; i <= n; i++) {
+                t = a[i]; gsub(/;/, "", t)
+                if (t == h || t == b) { print f; break }
+              }
+            }
+          ' | sort -u)
+          test -n "$FILES" || { echo "ERROR: no nginx server block serving $BARE"; exit 1; }
+          echo "matched confs:"; echo "$FILES"
+
+          CHANGED=0
+          for RAW in $FILES; do
+            # sites-enabled/* 通常是指向 sites-available/* 的软链：sed -i 会把软链换成
+            # 普通文件、与源文件脱钩，cp -a 也会复制成软链导致备份无效。
+            # 一律解引用到真实文件再改，软链自然跟着生效。
+            CONF=$(readlink -f "$RAW")
+            echo "--- $RAW -> $CONF ---"
+            grep -n -E 'try_files|location [^ ]+ \{|server_name' "$CONF" || true
+
+            if grep -q 'try_files \$uri \$uri/ /index.html' "$CONF"; then
+              echo "  already has SPA fallback, skip"
+              continue
+            fi
+
+            BAK="$CONF.bak.$(date -u +%Y%m%dT%H%M%SZ)"
+            cp -p "$CONF" "$BAK"
+            echo "  backup: $BAK"
+
+            # ① try_files 末端 `=404` → `/index.html`
+            sed -i 's|try_files \$uri \$uri/ =404;|try_files $uri $uri/ /index.html;|g' "$CONF"
+
+            # ② 静态目录保留真 404：否则旧缓存页面请求已删除的 hash 文件时，
+            #    会拿到 200 text/html，浏览器报 MIME 错误而不是干净的 404。
+            if ! grep -q 'location \^~ /assets/' "$CONF"; then
+              awk '
+                !done && /location[ \t]+\/[ \t]*\{/ {
+                  print "    location ^~ /assets/ { try_files $uri =404; }"
+                  print "    location ^~ /img/    { try_files $uri =404; }"
+                  print ""
+                  done = 1
+                }
+                { print }
+              ' "$CONF" > "$CONF.new" && mv "$CONF.new" "$CONF"
+              echo "  added static 404 guards for /assets/ and /img/"
+            fi
+
+            if ! grep -q 'try_files \$uri \$uri/ /index.html' "$CONF"; then
+              echo "  ERROR: rewrite did not take effect, restoring"
+              cp -p "$BAK" "$CONF"
+              exit 1
+            fi
+            CHANGED=$((CHANGED + 1))
+          done
+
+          if [ "$CHANGED" = "0" ]; then
+            echo "SPA_FALLBACK_OK (already configured)"
+            exit 0
+          fi
+
+          if ! nginx -t; then
+            echo "ERROR: nginx -t failed, restoring every backup"
+            for RAW in $FILES; do
+              CONF=$(readlink -f "$RAW")
+              LAST=$(ls -1t "$CONF".bak.* 2>/dev/null | head -1 || true)
+              [ -n "$LAST" ] && cp -p "$LAST" "$CONF"
+            done
+            nginx -t && systemctl reload nginx
+            exit 1
+          fi
+          systemctl reload nginx
+          echo "SPA_FALLBACK_OK (rewritten $CHANGED file(s))"
+          REMOTE
+
       - name: Verify deployed artifact (fingerprint + version + HTTP)
         shell: bash
         run: |
@@ -152,6 +247,30 @@ jobs:
             echo "::error::health check did not return 200"
             exit 1
           fi
+          # v3.0.0：11 个导航项各有独立 URL，全部依赖 SPA 回退。
+          # 只要有一条不是 200，就说明 nginx 改写出问题（用户刷新即 404），必须阻断发布。
+          ROUTE_OUT=$(ssh $SSH_OPTS "$LH_USER@$LH_HOST" bash -s -- "$CANONICAL_HOST" <<'REMOTE'
+          for p in / /basis /screen /paths /tables /workflow /test /control /pitfalls /quiz /caveats; do
+            printf '%s %s\n' "$p" "$(curl -sS -o /dev/null -w '%{http_code}' -H "Host: $1" "http://127.0.0.1$p")"
+          done
+          # 静态守卫的负向对照：缺失的 hash 资源必须是真 404，而不是回退出的 index.html
+          printf '%s %s\n' "/assets/nonexistent.js" "$(curl -sS -o /dev/null -w '%{http_code}' -H "Host: $1" 'http://127.0.0.1/assets/nonexistent.js')"
+          REMOTE
+          )
+          echo "--- route check ---"
+          echo "$ROUTE_OUT"
+          BAD=$(printf '%s\n' "$ROUTE_OUT" | awk '$1 != "/assets/nonexistent.js" && $2 != 200')
+          if [ -n "$BAD" ]; then
+            echo "::error::some routes did not return 200 after SPA fallback"
+            exit 1
+          fi
+          GUARD=$(printf '%s\n' "$ROUTE_OUT" | awk '$1 == "/assets/nonexistent.js" { print $2 }')
+          if [ "$GUARD" != "404" ]; then
+            echo "::error::/assets/ guard should return 404 but returned $GUARD"
+            exit 1
+          fi
+          ROUTES_OK=$(printf '%s\n' "$ROUTE_OUT" | awk '$2 == 200' | wc -l | tr -d ' ')
+          echo "routes ok: $ROUTES_OK / 11 (+ /assets/ guard 404)"
           echo "DEPLOY_VERIFIED tree=$REMOTE_SHA version=$DEPLOYED_VERSION http=$CODE"
           {
             echo "## Deployment verified"
@@ -162,5 +281,6 @@ jobs:
             echo "| artifact tree | \`$REMOTE_SHA\` |"
             echo "| deployed version | \`$DEPLOYED_VERSION\` |"
             echo "| health (Host header) | HTTP $CODE |"
+            echo "| routes (11, SPA fallback) | $ROUTES_OK / 11 OK |"
             echo "| webroot | \`$LH_ROOT\` |"
           } >> "$GITHUB_STEP_SUMMARY"

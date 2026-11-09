@@ -134,10 +134,10 @@ html[data-theme='sea-salt'] {
 }
 .topbar .bar {
   max-width: 1280px; margin: 0 auto; padding: 10px 28px;
-  display: flex; align-items: center; gap: 14px;
+  display: flex; align-items: center; gap: 12px;
 }
-/* 品牌改两行堆叠（英文在上 / 中文在下）：横向由 402px 收到约 228px，为 11 项导航腾出整行宽度 */
-.brand { display: flex; align-items: center; gap: 10px; white-space: nowrap; flex-shrink: 0; }
+/* 品牌改两行堆叠（英文在上 / 中文在下）：横向由 402px 收到约 238px，为 11 项导航腾出整行宽度 */
+.brand { display: flex; align-items: center; gap: 9px; white-space: nowrap; flex-shrink: 0; }
 .brand .mark {
   width: 8px; height: 26px; border-radius: 2px; background: var(--accent);
   display: inline-block; flex-shrink: 0;
@@ -145,10 +145,13 @@ html[data-theme='sea-salt'] {
 .brand-text { display: flex; flex-direction: column; justify-content: center; gap: 1px; }
 .brand-en { font-size: 13px; letter-spacing: .065em; color: var(--navy); font-weight: 800; line-height: 1.2; }
 .brand-sub { font-size: 11.5px; color: var(--subtext); letter-spacing: .02em; line-height: 1.45; }
-/* nowrap：11 项导航永不折行；margin-left:auto 把导航+切换器整体推到右侧 */
-.navlinks { display: flex; gap: 2px; flex-wrap: nowrap; margin-left: auto; min-width: 0; }
+/* nowrap：11 项导航永不折行；margin-left:auto 把导航+切换器整体推到右侧。
+   v3.0.0 起导航行末尾多了一个「站群入口」按钮（约 92px），而 .bar 的内容区
+   固定 1224px（1280 − 28×2），窗口再宽也不会变 —— 所以只能在桌面档本身收紧：
+   字号 12→11.8、横向内边距 7→6、项间距 2→1，共省约 52px。 */
+.navlinks { display: flex; gap: 1px; flex-wrap: nowrap; margin-left: auto; min-width: 0; }
 .navlinks a {
-  font-size: 12px; color: var(--subtext); padding: 6px 7px;
+  font-size: 11.8px; color: var(--subtext); padding: 5px 6px;
   border-radius: 7px; font-weight: 600; white-space: nowrap;
 }
 .navlinks a:hover, .navlinks a.active { color: var(--navy); background: var(--lightblue); text-decoration: none; }
@@ -454,19 +457,98 @@ footer { background: var(--panel-strong); border-top: 1px solid var(--line); col
 .bar-fill { border-radius: 5px 5px 0 0; margin-top: 3px; background: var(--primary); }
 .bar-label { font-size: 10.5px; color: var(--subtext); line-height: 1.35; margin-top: 6px; }
 
+/* ---------- 页眉「站群入口」（v3.0.0） ----------
+   放在 .navlinks 内部末尾：它要跟导航按钮同排、同高、同风格，
+   并靠 margin-left:auto 之外的自然排布贴在导航行最右端。
+   注意不要再给它自己 margin-left:auto —— 那会把它和导航拆成两段，
+   中间出现弹性空隙。 */
+.nav-cta {
+  display: inline-flex; align-items: center; gap: 4px;
+  margin-left: 5px;                 /* 与最后一个导航项拉开，避免粘连成一项 */
+  padding: 5px 8px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--white);
+  color: var(--navy);
+  font-size: 11px; font-weight: 700;
+  white-space: nowrap;
+  flex-shrink: 0;                   /* 绝不被导航压缩 —— 缺这条窄屏会把它挤成竖排 */
+  transition: border-color .15s, color .15s, background-color .15s;
+}
+.nav-cta:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  text-decoration: none;
+}
+.nav-cta svg { flex: none; }
+
+/* ---------- 页尾翻页（v3.0.0） ----------
+   拆成多页后必须给「下一步」，否则读者读完一节就没有去处。 */
+.page-nav-wrap { padding-bottom: 64px; }
+.page-nav {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+  margin-top: 40px; padding-top: 26px;
+  border-top: 1px solid var(--line);
+}
+.page-nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 13px 16px;
+  border: 1px solid var(--line); border-radius: 10px;
+  background: var(--white); color: var(--subtext);
+  transition: border-color .15s, color .15s, transform .15s;
+}
+.page-nav-item:hover { border-color: var(--primary); color: var(--navy); text-decoration: none; transform: translateY(-1px); }
+.page-nav-item.next { justify-content: flex-end; text-align: right; }
+.page-nav-item b { display: block; font-size: 13.5px; color: var(--navy); font-weight: 800; }
+.page-nav-item small { display: block; font-size: 11px; color: var(--on-dark-muted); margin-bottom: 2px; letter-spacing: .02em; }
+.page-nav-item.is-empty { visibility: hidden; }
+
+/* ---------- 首页章节导览卡（v3.0.0） ----------
+   内容拆页后，首页承担目录职责。 */
+.pager-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.pager-card {
+  display: flex; align-items: center; gap: 13px;
+  padding: 14px 16px;
+  border: 1px solid var(--line); border-radius: 10px;
+  background: var(--white); color: var(--subtext);
+  transition: border-color .15s, box-shadow .15s, transform .15s;
+}
+.pager-card:hover {
+  border-color: var(--primary); text-decoration: none;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .06);
+  transform: translateY(-1px);
+}
+.pager-no {
+  flex: none; width: 30px; height: 30px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border-radius: 8px; background: var(--panel-strong);
+  font-family: var(--mono); font-size: 12px; font-weight: 800; color: var(--primary);
+}
+.pager-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.pager-body b { font-size: 13.5px; color: var(--navy); font-weight: 800; }
+.pager-sub { font-size: 11.5px; color: var(--on-dark-muted); line-height: 1.5; }
+.pager-arrow { flex: none; margin-left: auto; color: var(--primary); opacity: .55; }
+.pager-card:hover .pager-arrow { opacity: 1; }
+
+/* 品牌改为链接后，去掉链接默认样式 */
+a.brand { text-decoration: none; color: inherit; }
+a.brand:hover { text-decoration: none; }
+
 /* 响应式 */
 /* 1240 以下：导航收紧字号与内边距，仍保持 11 项单行（不靠压缩可读性换空间） */
 @media (max-width: 1240px) {
   .topbar .bar { gap: 10px; }
   .navlinks { gap: 1px; }
   .navlinks a { font-size: 11.5px; padding: 5px 5px; }
+  .nav-cta { margin-left: 4px; padding: 5px 7px; }
 }
-/* 1140 以下：导航收进「目录」下拉，切换器依然钉在最右侧 */
+/* 1140 以下：导航收进「目录」下拉，切换器与站群入口依然钉在最右侧 */
 @media (max-width: 1139px) {
   .topbar .bar { flex-wrap: wrap; }
   .navlinks { display: none; width: 100%; margin-left: 0; padding-top: 8px; }
   .navlinks.open { display: flex; flex-wrap: wrap; gap: 3px; }
   .nav-toggle { display: inline-block; margin-left: auto; }
+  .nav-cta { margin-left: 8px; font-size: 11.5px; padding: 5px 9px; }
 }
 
 @media (max-width: 1080px) {
@@ -493,10 +575,16 @@ footer { background: var(--panel-strong); border-top: 1px solid var(--line); col
   .flow-row { grid-template-columns: repeat(2, 1fr); }
   .sec-head h2 { font-size: 22px; }
   .sec-head .sub { margin-left: 0; }
+  .pager-grid { grid-template-columns: 1fr; }
+  .page-nav { grid-template-columns: 1fr; }
+  .page-nav-item.is-empty { display: none; }
 }
 @media (max-width: 520px) {
   .grid4, .flow-row, .src-grid { grid-template-columns: 1fr; }
   .hero h1 { font-size: 29px; }
+  /* 极窄屏：站群入口只留房子图标，省下约 52px 给品牌与目录按钮 */
+  .nav-cta-text { display: none; }
+  .nav-cta { padding: 5px 7px; margin-left: 6px; }
 }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
