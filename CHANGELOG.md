@@ -3,6 +3,16 @@
 本文件记录可发布版本的变更。版本号的**单一来源**是仓库根目录的 `VERSION`，
 发版时须用 `scripts/audit-version-sync.py` 做一致性审计。格式遵循 SemVer。
 
+## v1.0.4 — 2026-11-09
+
+HTTPS 正式上线（站点内容与部署工作流未改动，变更为服务器侧配置与证书）。
+
+- DNS 双权威源 ×3 次复核通过：裸域与 `www` 均解析到目标轻量云主机；公网 HTTP / HTTPS 均可访问。
+- 单独签发包含裸域 + `www` 两 SAN 的 ECDSA 证书（HTTP-01 / `webroot /var/www/acme`，`certbot.timer` 自动续期，续期预演通过）；现有 `*.power-knowledge.tech` 通配符只覆盖一级子域，不能覆盖 `www.motor-lighting.*`。
+- nginx 补 443：`www` 提供内容并启用 HSTS，裸域 80 / 443 统一 301 到 `https://www.motor-lighting.power-knowledge.tech`；80 的 `www` 保留 200，供 ACME 续期与部署后 Host 头回环健康检查使用。
+- 公网复验：`https://www...` 200 且证书校验通过、裸域 301 链 1 跳落地、ACME 路径 404、JS / CSS / 含中文文件名的插图全部 200、默认 server 与既有站点无回归；部署产物指纹仍为 `54656634…276e`。
+- 配置变更后重新触发自动部署，run 全绿，部署链路未受影响；nginx 变更留有备份 `/root/motor-lighting-nginx-20261109T102953Z.bak`。
+
 ## v1.0.3 — 2026-11-09
 
 部署工作流修正（站点内容未改动）。
