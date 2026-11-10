@@ -7,9 +7,13 @@ import {
   BasisPage, CaveatsPage, ControlPage, HomePage, PathsPage, PitfallsPage,
   QuizPage, ScreenPage, TablesPage, TestPage, WorkflowPage,
 } from './pages'
+import Feedback from './pages/Feedback'
+import Admin from './pages/Admin'
 
 /** 路由 → 页面组件。新增章节只需在此加一行 + 在 router.ts 加一条定义。 */
 const VIEWS: Record<PageId, () => ReactElement> = {
+  feedback: Feedback,
+  admin: Admin,
   home: HomePage,
   basis: BasisPage,
   screen: ScreenPage,
@@ -77,7 +81,7 @@ function NotFoundPage() {
           请从下面的目录重新进入，或直接回到首页。
         </p>
         <div className="pager-grid">
-          {PAGES.map((p) => (
+          {PAGES.filter((p) => !p.hidden).map((p) => (
             <Link className="pager-card" to={p.path} key={p.id}>
               <span className="pager-no">{p.no || '·'}</span>
               <span className="pager-body">
@@ -120,7 +124,7 @@ function Shell() {
             目录 ▾
           </button>
           <nav className={'navlinks' + (navOpen ? ' open' : '')} aria-label="章节导航">
-            {PAGES.map((p) => (
+            {PAGES.filter((p) => !p.hidden).map((p) => (
               <Link
                 key={p.id}
                 to={p.path}
@@ -177,7 +181,7 @@ function Shell() {
             <div className="foot-col">
               <h4>章节导航</h4>
               <div className="foot-links">
-                {PAGES.map((p) => (
+                {PAGES.filter((p) => !p.hidden).map((p) => (
                   <Link key={p.id} to={p.path}>{p.label}</Link>
                 ))}
               </div>

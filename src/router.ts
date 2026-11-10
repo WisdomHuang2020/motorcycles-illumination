@@ -14,6 +14,7 @@
 export type PageId =
   | 'home' | 'basis' | 'screen' | 'paths' | 'tables'
   | 'workflow' | 'test' | 'control' | 'pitfalls' | 'quiz' | 'caveats'
+  | 'feedback' | 'admin'
 
 export type Page = {
   id: PageId
@@ -29,6 +30,8 @@ export type Page = {
   sub: string
   /** 供 <meta name="description"> 使用，避免 11 个页面共用一段描述 */
   desc: string
+  /** 不在导航与首页导览卡里显示（管理后台入口用） */
+  hidden?: boolean
 }
 
 /** 站名。首页 <title> 直接用它，其余页面用它作后缀。 */
@@ -101,6 +104,20 @@ export const PAGES: readonly Page[] = [
     sub: '矛盾不抹平 · 来源可追溯',
     desc: '培训资料内部 6 处互相矛盾的记载逐条并列保留，附 S1~S7 资料来源清单与免责说明。',
   },
+
+  {
+    id: 'feedback', path: '/feedback', no: '·', label: '留言',
+    title: '读者留言',
+    sub: '发现配光数据或公式问题？',
+    desc: '提交配光参数、公式或数据上的问题，帮助作者改进本站。',
+  },
+  {
+    id: 'admin', path: '/admin', no: '', label: '管理',
+    title: '留言管理',
+    sub: '作者专用',
+    desc: '本站留言管理后台。',
+    hidden: true,
+  },
 ] as const
 
 export const HOME_PAGE = PAGES[0]
@@ -129,9 +146,11 @@ export function pathOf(id: PageId): string {
 
 /** 上一页 / 下一页，用于页尾连续阅读导航（首页返回 null） */
 export function siblings(id: PageId): { prev: Page | null; next: Page | null } {
-  const i = PAGES.findIndex((p) => p.id === id)
+  // 只串可见页面：admin 是隐藏的后台入口，不该出现在「下一页」链条里
+  const visible = PAGES.filter((p) => !p.hidden)
+  const i = visible.findIndex((p) => p.id === id)
   if (i < 0) return { prev: null, next: null }
-  return { prev: i > 0 ? PAGES[i - 1] : null, next: i < PAGES.length - 1 ? PAGES[i + 1] : null }
+  return { prev: i > 0 ? visible[i - 1] : null, next: i < PAGES.length - 1 ? visible[i + 1] : null }
 }
 
 /**

@@ -3,6 +3,23 @@
 本文件记录可发布版本的变更。版本号的**单一来源**是仓库根目录的 `VERSION`，
 发版时须用 `scripts/audit-version-sync.py` 做一致性审计。格式遵循 SemVer。
 
+## v3.1.0 — 2026-11-10
+
+**接入读者留言与留言管理后台。** 本站上线时漏接留言板，读者没有反馈入口、管理员也无从查看。
+
+本站没有 react-router（自研路由 `Route.tsx` + `router.ts`），所以不是简单复制：
+- `router.ts`：`PageId` 增加 `feedback` / `admin`；`Page` 加可选 `hidden`；
+  `PAGES` 补两条；`siblings()` 改为只在可见页面之间串联（否则「下一页」会跳到后台）。
+- `App.tsx`：`VIEWS` 补两项；两处 `PAGES.map` 改为 `PAGES.filter(p => !p.hidden)` ——
+  留言进导航，`/admin` 隐藏。
+- 页面从 AHB 移植（`pages/Feedback.tsx`、`pages/Admin.tsx`、`lib/feedbackApi.ts`）。
+  两个站的 token 命名不同（本站是 `brand`、AHB 是 `primary`），已批量替换；
+  `text-text-*` 这类正文色做了保护，避免被 `primary→brand` 误伤。
+- 补 `--color-accent / success / danger`（八套主题 + `@theme` 默认值）——
+  留言页的错误提示与附件标签要用，缺了这些变量 Tailwind 会静默不生成对应类。
+- 补 `.input-field` / `.card-surface` 两个手写组件类（同样来自 AHB）——
+  它们不是 Tailwind 工具类，直接复制页面代码不会带过来，表现为输入框完全没有边框。
+
 ## v3.0.3 — 2026-11-10
 
 第二轮核对：把 GB/T 31887 的三份扫描件（.2 回复反射装置、.3 安装和使用）也逐页读了，**查出标准对照表 2 处引错标准 + 1 处术语不合原文**。这类错误比数值写错更容易漏 —— 数值看着都对，却指向了另一份标准。

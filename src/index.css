@@ -27,6 +27,11 @@
   --color-internal: #2563eb;
   --font-sans: 'Inter', system-ui, -apple-system, 'PingFang SC', 'Microsoft YaHei', 'Segoe UI', sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Consolas, monospace;
+  /* 语义色：留言页的失败提示、附件标签等需要（2026-11-10 补）。
+     motif 与 brand/internal 一致 —— 八套主题里都有同名覆盖。 */
+  --color-accent: #f59e0b;
+  --color-success: #22c55e;
+  --color-danger: #ef4444;
 }
 
 /* ── 8 套主题：与站群逐值一致（2026-11-09 从 entrance 线上 CSS 双源核对）── */
@@ -35,48 +40,72 @@ html[data-theme='blue'] {
   --color-border: #d3d9e0; --color-border-light: #e4e7eb;
   --color-text-primary: #14171c; --color-text-secondary: #4b535e; --color-text-muted: #6b7480;
   --color-brand: #0070c0; --color-brand-light: #0060b0; --color-brand-dark: #0050a0;
+  --color-accent: #a35c00;
+  --color-success: #1a7f3c;
+  --color-danger: #b42318;
 }
 html[data-theme='dark-teal'] {
   --color-bg: #0a0a0a; --color-surface: #171717; --color-surface-elevated: #262626;
   --color-border: #404040; --color-border-light: #525252;
   --color-text-primary: #f5f5f5; --color-text-secondary: #a3a3a3; --color-text-muted: #737373;
   --color-brand: #0f766e; --color-brand-light: #14b8a6; --color-brand-dark: #134e4a;
+  --color-accent: #f59e0b;
+  --color-success: #22c55e;
+  --color-danger: #ef4444;
 }
 html[data-theme='navy-tech'] {
   --color-bg: #0b1a2b; --color-surface: #12253c; --color-surface-elevated: #1b3350;
   --color-border: #2b4a6b; --color-border-light: #3a5c80;
   --color-text-primary: #eaf4ff; --color-text-secondary: #a8c2dc; --color-text-muted: #7e9bb8;
   --color-brand: #3aa0e8; --color-brand-light: #6bc4ff; --color-brand-dark: #2277b8;
+  --color-accent: #ffb454;
+  --color-success: #4ade80;
+  --color-danger: #ff7a7a;
 }
 html[data-theme='graphite'] {
   --color-bg: #f2f3f5; --color-surface: #fff; --color-surface-elevated: #fafbfc;
   --color-border: #c9ced5; --color-border-light: #e0e3e8;
   --color-text-primary: #1b2027; --color-text-secondary: #4d5661; --color-text-muted: #78818c;
   --color-brand: #3f4855; --color-brand-light: #5b6675; --color-brand-dark: #2c333d;
+  --color-accent: #b45309;
+  --color-success: #15803d;
+  --color-danger: #b91c1c;
 }
 html[data-theme='warm-paper'] {
   --color-bg: #faf6ed; --color-surface: #fffdf7; --color-surface-elevated: #fbf6e9;
   --color-border: #dcd0b6; --color-border-light: #eae0c9;
   --color-text-primary: #2e2519; --color-text-secondary: #5e5140; --color-text-muted: #8a7a63;
   --color-brand: #9a5b13; --color-brand-light: #b8761f; --color-brand-dark: #7a4710;
+  --color-accent: #2f6b62;
+  --color-success: #3f7a3f;
+  --color-danger: #a8362b;
 }
 html[data-theme='forest'] {
   --color-bg: #0c1712; --color-surface: #14241b; --color-surface-elevated: #1d3226;
   --color-border: #2f4a38; --color-border-light: #3d5c47;
   --color-text-primary: #e8f5ec; --color-text-secondary: #a7c4b1; --color-text-muted: #7d9c88;
   --color-brand: #3fbf7f; --color-brand-light: #6ed8a2; --color-brand-dark: #2b9461;
+  --color-accent: #e9c46a;
+  --color-success: #6ee7a0;
+  --color-danger: #ff8f80;
 }
 html[data-theme='indigo'] {
   --color-bg: #f6f5fc; --color-surface: #fff; --color-surface-elevated: #fbfaff;
   --color-border: #d6d1e8; --color-border-light: #e7e3f2;
   --color-text-primary: #211d33; --color-text-secondary: #524c6b; --color-text-muted: #7e7899;
   --color-brand: #5b4bd6; --color-brand-light: #7869e8; --color-brand-dark: #4538ad;
+  --color-accent: #b2568a;
+  --color-success: #1a7f5a;
+  --color-danger: #c23b5b;
 }
 html[data-theme='sea-salt'] {
   --color-bg: #eef7f7; --color-surface: #fff; --color-surface-elevated: #f8fdfd;
   --color-border: #c4dcda; --color-border-light: #dceae9;
   --color-text-primary: #123033; --color-text-secondary: #416064; --color-text-muted: #6e8b8d;
   --color-brand: #0e7490; --color-brand-light: #1294b0; --color-brand-dark: #0a566c;
+  --color-accent: #b2601f;
+  --color-success: #137a52;
+  --color-danger: #b23b3b;
 }
 
 /* 语义别名：v1 的类名全部改吃这些变量，8 套主题自动生效 */
@@ -589,4 +618,39 @@ a.brand:hover { text-decoration: none; }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   * { transition: none !important; animation: none !important; }
+}
+
+
+/* ── 留言页需要的两个组件类（2026-11-10 从 AHB 移植）─────────────
+   这两个类在 AHB 的 index.css 里是手写的 @layer components，不是 Tailwind
+   的工具类，所以直接复制页面代码不会带过来 —— 表现为表单输入框完全没有
+   边框和背景，只剩占位文字浮在页面上。颜色 token 已按本站命名改成 brand。 */
+.card-surface {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  transition: border-color 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
+}
+.card-surface:hover {
+  border-color: var(--color-brand-light);
+  background-color: var(--color-surface-elevated);
+  box-shadow: 0 0 0 1px rgba(20, 184, 166, 0.08);
+}
+.input-field {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  color: var(--color-text-primary);
+  font-family: inherit;
+  font-size: 0.875rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.input-field:focus {
+  outline: none;
+  border-color: var(--color-brand-light);
+  box-shadow: 0 0 0 2px rgba(15, 118, 110, 0.2);
+}
+.input-field::placeholder {
+  color: var(--color-text-muted);
 }
