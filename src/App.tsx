@@ -1,5 +1,5 @@
 import { useState, type ReactElement } from 'react'
-import { ArrowLeft, ArrowRight, Github, House } from 'lucide-react'
+import { ArrowLeft, ArrowRight, House } from 'lucide-react'
 import ThemeSwitcher from './components/ThemeSwitcher'
 import { Link, RouterProvider, useRoute } from './Route'
 import { PAGES, siblings, type PageId } from './router'
@@ -219,14 +219,7 @@ function Shell() {
             </div>
             <div className="foot-legal-right">
               <span className="app-version">{__APP_VERSION__}</span>
-              <a
-                href="https://github.com/WisdomHuang2020/motorcycles-illumination"
-                target="_blank"
-                rel="noreferrer"
-              >
-                <Github size={15} strokeWidth={2} aria-hidden="true" />
-                GitHub
-              </a>
+              {/* 2026-11-10 站群统一口径：页面上的 GitHub 源码仓库链接与图标全部移除。 */}
             </div>
           </div>
 
