@@ -174,13 +174,18 @@ html[data-theme='sea-salt'] {
 .brand-text { display: flex; flex-direction: column; justify-content: center; gap: 1px; }
 .brand-en { font-size: 13px; letter-spacing: .065em; color: var(--navy); font-weight: 800; line-height: 1.2; }
 .brand-sub { font-size: 11.5px; color: var(--subtext); letter-spacing: .02em; line-height: 1.45; }
-/* nowrap：11 项导航永不折行；margin-left:auto 把导航+切换器整体推到右侧。
-   v3.0.0 起导航行末尾多了一个「站群入口」按钮（约 92px），而 .bar 的内容区
-   固定 1224px（1280 − 28×2），窗口再宽也不会变 —— 所以只能在桌面档本身收紧：
-   字号 12→11.8、横向内边距 7→6、项间距 2→1，共省约 52px。 */
-.navlinks { display: flex; gap: 1px; flex-wrap: nowrap; margin-left: auto; min-width: 0; }
+/* nowrap 只加在单项上；容器本身允许换行。
+   v3.0.5 修：原先容器是 flex-wrap:nowrap + min-width:0 —— 前者禁止内部换行，后者允许
+   flex 把它压得比内容窄（1200px 时导航只要到 604px，而 12 项需要 780px），链接于是
+   溢出盒子、直接盖在右侧「站群入口」按钮上（实测「10 资料口径」「留言」被压住）。
+   注意此时盒子右边界仍在按钮左边，只比 getBoundingClientRect 会误判成「没重叠」，
+   要看 scrollWidth - clientWidth 才看得见。改成允许换行后，真到极限就多一行，绝不重叠。 */
+.navlinks { display: flex; gap: 0; flex-wrap: wrap; justify-content: flex-end; margin-left: auto; min-width: 0; }
+/* v3.0.5 起基准字号收到 11.5 / 内边距 4 / 间距 0（原 11.8 / 6 / 1）：
+   v3.1.0 增加了「留言」一项，12 项按原尺寸需要 780px，而 .bar 内容宽上限 1224px，
+   还要容纳品牌、站群入口与切换器 —— 原尺寸在 1280 就打不下一行了。 */
 .navlinks a {
-  font-size: 11.8px; color: var(--subtext); padding: 5px 6px;
+  font-size: 11.5px; color: var(--subtext); padding: 5px 4px;
   border-radius: 7px; font-weight: 600; white-space: nowrap;
 }
 .navlinks a:hover, .navlinks a.active { color: var(--navy); background: var(--lightblue); text-decoration: none; }
@@ -564,18 +569,27 @@ a.brand { text-decoration: none; color: inherit; }
 a.brand:hover { text-decoration: none; }
 
 /* 响应式 */
-/* 1240 以下：导航收紧字号与内边距，仍保持 11 项单行（不靠压缩可读性换空间） */
-@media (max-width: 1240px) {
-  .topbar .bar { gap: 10px; }
-  .navlinks { gap: 1px; }
-  .navlinks a { font-size: 11.5px; padding: 5px 5px; }
-  .nav-cta { margin-left: 4px; padding: 5px 7px; }
+/* 1300 以下：顶栏左右内边距 28→20、间距收紧、站群入口与切换器收窄、切换器只留图标
+   —— 合计省出约 70px，让 12 项（含 v3.1.0 新增的「留言」）在 1160px 仍是单行。
+   断点为什么是 1300：正常档 12 项实测需约 1150px 内容宽，加 56px padding 与 Windows
+   经典滚动条 15px 约 1220px，取 1300 才能让 1280 / 1290 这类常见窗口不退化成两行。 */
+@media (max-width: 1300px) {
+  .topbar .bar { gap: 9px; padding: 10px 20px; }
+  .nav-cta { margin-left: 3px; padding: 5px 6px; font-size: 10.5px; }
+  .theme-trigger { padding: 5px 8px; gap: 6px; }
+  .theme-name { display: none; }
 }
-/* 1140 以下：导航收进「目录」下拉，切换器与站群入口依然钉在最右侧 */
-@media (max-width: 1139px) {
+/* 1160 以下：导航收进「目录」下拉，切换器与站群入口依然钉在最右侧。
+   断点从 1139 提到 1159：12 项导航在 1140~1159 这段实测放不下一行（差约 20px），
+   与其在这 20px 里抠内边距，不如直接进抽屉 —— 1160 起实测单行，边界更好解释。 */
+@media (max-width: 1159px) {
   .topbar .bar { flex-wrap: wrap; }
-  .navlinks { display: none; width: 100%; margin-left: 0; padding-top: 8px; }
-  .navlinks.open { display: flex; flex-wrap: wrap; gap: 3px; }
+  /* order:10 把抽屉整行排到最后 —— 否则它占据 100% 宽后会把「站群入口」和主题切换器
+     挤到第三行、与「目录」按钮分离。加 order 后第一行固定是
+     品牌 + 目录 + 站群入口 + 切换器，第二行才是导航。 */
+  .navlinks { display: none; width: 100%; margin-left: 0; padding-top: 8px; order: 10; }
+  /* 抽屉里回左对齐：flex-end 是给单行导航贴右边的，展开成整行后右对齐会散架 */
+  .navlinks.open { display: flex; flex-wrap: wrap; justify-content: flex-start; gap: 3px; }
   .nav-toggle { display: inline-block; margin-left: auto; }
   .nav-cta { margin-left: 8px; font-size: 11.5px; padding: 5px 9px; }
 }
