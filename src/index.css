@@ -163,7 +163,7 @@ html[data-theme='sea-salt'] {
 }
 .topbar .bar {
   max-width: 1280px; margin: 0 auto; padding: 10px 28px;
-  display: flex; align-items: center; gap: 12px;
+  display: flex; align-items: center; gap: 10px;
 }
 /* 品牌改两行堆叠（英文在上 / 中文在下）：横向由 402px 收到约 238px，为 11 项导航腾出整行宽度 */
 .brand { display: flex; align-items: center; gap: 9px; white-space: nowrap; flex-shrink: 0; }
@@ -181,11 +181,13 @@ html[data-theme='sea-salt'] {
    注意此时盒子右边界仍在按钮左边，只比 getBoundingClientRect 会误判成「没重叠」，
    要看 scrollWidth - clientWidth 才看得见。改成允许换行后，真到极限就多一行，绝不重叠。 */
 .navlinks { display: flex; gap: 0; flex-wrap: wrap; justify-content: flex-end; margin-left: auto; min-width: 0; }
-/* v3.0.5 起基准字号收到 11.5 / 内边距 4 / 间距 0（原 11.8 / 6 / 1）：
-   v3.1.0 增加了「留言」一项，12 项按原尺寸需要 780px，而 .bar 内容宽上限 1224px，
-   还要容纳品牌、站群入口与切换器 —— 原尺寸在 1280 就打不下一行了。 */
+/* v3.1.2 起基准字号定在 13px（原 11.8，v3.1.1 为塞下 12 项压到 11.5，用户反馈「太小」）。
+   13 是实测天花板：12 项需要 772px，而最宽档（.bar 撑满 1280）扣掉品牌 237、
+   站群入口 82、切换器与间距后只剩 733px —— 差的 39px 只能从主题切换器的名称里出。
+   所以本轮把 .theme-name 改成全局隐藏（名称在下拉菜单里完整可读，按钮留图标+色点），
+   换来导航 +1.5px 字号。再往上 13.5px 需要 798px，连隐藏名称后都不够。 */
 .navlinks a {
-  font-size: 11.5px; color: var(--subtext); padding: 5px 4px;
+  font-size: 13px; color: var(--subtext); padding: 5px 3px;
   border-radius: 7px; font-weight: 600; white-space: nowrap;
 }
 .navlinks a:hover, .navlinks a.active { color: var(--navy); background: var(--lightblue); text-decoration: none; }
@@ -198,6 +200,9 @@ html[data-theme='sea-salt'] {
   border: 1px solid var(--line); background: var(--white); color: var(--subtext);
   border-radius: 8px; padding: 5px 10px; font-size: 12px; font-weight: 700; white-space: nowrap;
 }
+/* v3.1.2：主题名称全局隐去，只留图标 + 色点 + 箭头（省 62px 给导航字号）。
+   8 套主题的名字在下拉菜单里逐条列出，按钮另有 title 与 aria-label，可发现性不受影响。 */
+.theme-name { display: none; }
 .theme-trigger:hover { border-color: var(--primary); color: var(--navy); }
 .theme-dot { width: 11px; height: 11px; border-radius: 50%; display: inline-block; flex-shrink: 0; box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-text-primary) 18%, transparent); }
 .theme-menu {
@@ -504,7 +509,7 @@ footer { background: var(--panel-strong); border-top: 1px solid var(--line); col
   border-radius: 7px;
   background: var(--white);
   color: var(--navy);
-  font-size: 11px; font-weight: 700;
+  font-size: 11.5px; font-weight: 700;
   white-space: nowrap;
   flex-shrink: 0;                   /* 绝不被导航压缩 —— 缺这条窄屏会把它挤成竖排 */
   transition: border-color .15s, color .15s, background-color .15s;
@@ -569,20 +574,21 @@ a.brand { text-decoration: none; color: inherit; }
 a.brand:hover { text-decoration: none; }
 
 /* 响应式 */
-/* 1300 以下：顶栏左右内边距 28→20、间距收紧、站群入口与切换器收窄、切换器只留图标
-   —— 合计省出约 70px，让 12 项（含 v3.1.0 新增的「留言」）在 1160px 仍是单行。
-   断点为什么是 1300：正常档 12 项实测需约 1150px 内容宽，加 56px padding 与 Windows
-   经典滚动条 15px 约 1220px，取 1300 才能让 1280 / 1290 这类常见窗口不退化成两行。 */
+/* 1300 以下：顶栏左右内边距 28→20、间距 10→9、站群入口与切换器收窄 —— 合计省约 30px，
+   让 13px 的 12 项在 1240px 仍能单行（748px）。
+   断点为什么是 1300：正常档要装品牌 237 + 导航 748 + 站群入口 82 + 切换器 76 + 三个
+   间距，再加 Windows 经典滚动条的 15px，1300 以下必须转紧凑档，否则 1280 / 1290 这类
+   常见窗口会退化成两行。 */
 @media (max-width: 1300px) {
   .topbar .bar { gap: 9px; padding: 10px 20px; }
-  .nav-cta { margin-left: 3px; padding: 5px 6px; font-size: 10.5px; }
+  .nav-cta { margin-left: 3px; padding: 5px 6px; }
   .theme-trigger { padding: 5px 8px; gap: 6px; }
-  .theme-name { display: none; }
 }
-/* 1160 以下：导航收进「目录」下拉，切换器与站群入口依然钉在最右侧。
-   断点从 1139 提到 1159：12 项导航在 1140~1159 这段实测放不下一行（差约 20px），
-   与其在这 20px 里抠内边距，不如直接进抽屉 —— 1160 起实测单行，边界更好解释。 */
-@media (max-width: 1159px) {
+/* 1240 以下：导航收进「目录」下拉，切换器与站群入口依然钉在最右侧。
+   13px 字号 + 12 项 = 748px（水平内边距已压到 3px）；紧凑档在 1240 剩约 1200px，
+   扣掉品牌 237、站群入口 78、切换器 70 与三个间距后能容 748px，1240 是实测能放下的
+   最小宽度 —— 再窄就进抽屉，不在几十像素里抠内边距。 */
+@media (max-width: 1239px) {
   .topbar .bar { flex-wrap: wrap; }
   /* order:10 把抽屉整行排到最后 —— 否则它占据 100% 宽后会把「站群入口」和主题切换器
      挤到第三行、与「目录」按钮分离。加 order 后第一行固定是
@@ -606,7 +612,6 @@ a.brand:hover { text-decoration: none; }
   .topbar .bar { padding: 10px 16px; }
   .brand-en { display: none; }
   .brand-sub { font-size: 12.5px; font-weight: 700; color: var(--navy); }
-  .theme-name { display: none; }
   footer { padding: 32px 16px 26px; }
   .foot-grid { grid-template-columns: 1fr; gap: 26px; }
   .foot-grid > .foot-col:last-child { grid-column: auto; }
